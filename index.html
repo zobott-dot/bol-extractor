@@ -82,9 +82,7 @@
       padding: 48px 24px;
     }
 
-    header {
-      margin-bottom: 32px;
-    }
+    header { margin-bottom: 32px; }
 
     .header-row {
       display: flex;
@@ -99,11 +97,7 @@
       margin-bottom: 8px;
     }
 
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
+    h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
 
     .badge {
       font-family: var(--mono);
@@ -117,10 +111,7 @@
       text-transform: uppercase;
     }
 
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 15px;
-    }
+    .subtitle { color: var(--text-muted); font-size: 15px; }
 
     .theme-toggle {
       background: var(--surface-raised);
@@ -137,10 +128,7 @@
       letter-spacing: 0.03em;
     }
 
-    .theme-toggle:hover {
-      background: var(--surface-hover);
-      border-color: var(--accent);
-    }
+    .theme-toggle:hover { background: var(--surface-hover); border-color: var(--accent); }
 
     [data-theme="dark"] .theme-label-light { display: none; }
     [data-theme="dark"] .theme-label-dark { display: inline; }
@@ -156,12 +144,8 @@
     }
 
     .card h2 {
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-muted);
-      margin-bottom: 16px;
+      font-size: 14px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 16px;
     }
 
     #drop-zone {
@@ -173,388 +157,218 @@
       transition: border-color 0.2s, background 0.2s;
     }
 
-    #drop-zone:hover,
-    #drop-zone.drag-over {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: var(--accent); background: var(--accent-soft);
     }
 
-    .drop-icon {
-      display: block;
-      font-size: 36px;
-      margin-bottom: 12px;
-      opacity: 0.7;
-    }
+    .drop-icon { display: block; font-size: 36px; margin-bottom: 12px; opacity: 0.7; }
+    #drop-zone p { color: var(--text-muted); font-size: 14px; }
+    #drop-zone .drop-hint { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
 
-    #drop-zone p {
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
-    #drop-zone .drop-hint {
-      color: var(--text-dim);
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    #progress-area {
-      padding: 16px 0 0;
-    }
+    #progress-area { padding: 16px 0 0; }
 
     .progress-bar {
-      height: 4px;
-      background: var(--surface-raised);
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 8px;
+      height: 4px; background: var(--surface-raised); border-radius: 2px;
+      overflow: hidden; margin-bottom: 8px;
     }
 
     .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      width: 0%;
-      transition: width 0.15s ease;
+      height: 100%; background: var(--accent); border-radius: 2px;
+      width: 0%; transition: width 0.15s ease;
     }
 
-    .progress-text {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text-dim);
-    }
+    .progress-text { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
 
     #file-info {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--success-soft);
-      border: 1px solid rgba(74, 222, 128, 0.2);
-      border-radius: var(--radius);
-      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--success-soft); border: 1px solid rgba(74, 222, 128, 0.2);
+      border-radius: var(--radius); padding: 12px 16px;
     }
 
-    .file-info-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      min-width: 0;
-    }
+    .file-info-content { display: flex; align-items: center; gap: 16px; min-width: 0; }
 
     .file-name {
-      font-family: var(--mono);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--success);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-family: var(--mono); font-size: 13px; font-weight: 500;
+      color: var(--success); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    .file-meta {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text-dim);
-      white-space: nowrap;
-    }
+    .file-meta { font-family: var(--mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 
     .file-clear-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 1.3rem;
-      padding: 0.5rem;
-      border-radius: 4px;
-      line-height: 1;
-      transition: color 0.15s, background 0.15s;
-      flex-shrink: 0;
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: 1.3rem; padding: 0.5rem; border-radius: 4px; line-height: 1;
+      transition: color 0.15s, background 0.15s; flex-shrink: 0;
     }
+    .file-clear-btn:hover { color: var(--error); background: var(--error-soft); }
 
-    .file-clear-btn:hover {
-      color: var(--error);
-      background: var(--error-soft);
-    }
-
-    .search-row {
-      display: flex;
-      gap: 8px;
-    }
+    .search-row { display: flex; gap: 8px; }
 
     #search-input {
-      flex: 1;
-      font-family: var(--mono);
-      font-size: 14px;
-      padding: 10px 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.15s;
+      flex: 1; font-family: var(--mono); font-size: 14px; padding: 10px 14px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); outline: none; transition: border-color 0.15s;
     }
-
-    #search-input:focus {
-      border-color: var(--border-focus);
-    }
-
-    #search-input:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    #search-input::placeholder {
-      color: var(--text-dim);
-    }
+    #search-input:focus { border-color: var(--border-focus); }
+    #search-input:disabled { opacity: 0.4; cursor: not-allowed; }
+    #search-input::placeholder { color: var(--text-dim); }
 
     #search-btn {
-      font-family: var(--sans);
-      font-size: 14px;
-      font-weight: 600;
-      padding: 10px 24px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: background 0.15s;
-      white-space: nowrap;
+      font-family: var(--sans); font-size: 14px; font-weight: 600; padding: 10px 24px;
+      background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
     }
-
-    #search-btn:hover:not(:disabled) {
-      background: var(--accent-hover);
-    }
-
-    #search-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    #search-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    #search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .search-clear-btn {
-      font-family: var(--sans);
-      font-size: 0.85rem;
-      font-weight: 500;
-      padding: 0.6rem 1rem;
-      background: var(--surface-raised);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      cursor: pointer;
-      white-space: nowrap;
+      font-family: var(--sans); font-size: 0.85rem; font-weight: 500; padding: 0.6rem 1rem;
+      background: var(--surface-raised); color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: var(--radius); cursor: pointer; white-space: nowrap;
       transition: background 0.15s, color 0.15s;
     }
+    .search-clear-btn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+    .search-clear-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .search-clear-btn:hover:not(:disabled) {
-      background: var(--surface-hover);
-      color: var(--text);
-    }
+    .hint { font-size: 12px; color: var(--text-dim); margin-top: 10px; }
 
-    .search-clear-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    #status-area:empty { display: none; }
 
-    .hint {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-top: 10px;
-    }
-
-    #status-area:empty {
-      display: none;
-    }
-
-    .status-msg {
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      margin-bottom: 16px;
-    }
-
-    .status-error {
-      background: var(--error-soft);
-      border: 1px solid rgba(240, 112, 112, 0.2);
-      color: var(--error);
-    }
-
-    .status-warn {
-      background: var(--warn-soft);
-      border: 1px solid rgba(240, 164, 91, 0.2);
-      color: var(--warn);
-    }
+    .status-msg { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin-bottom: 16px; }
+    .status-error { background: var(--error-soft); border: 1px solid rgba(240,112,112,0.2); color: var(--error); }
+    .status-warn { background: var(--warn-soft); border: 1px solid rgba(240,164,91,0.2); color: var(--warn); }
 
     .results-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
     }
-
-    .results-header h2 {
-      margin-bottom: 0;
-    }
-
-    .match-count {
-      font-family: var(--mono);
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+    .results-header h2 { margin-bottom: 0; }
+    .match-count { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
 
     .grand-total {
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      padding: 0.65rem 1rem;
-      background: var(--surface-raised);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 1.25rem;
+      font-family: var(--mono); font-size: 0.85rem; color: var(--text-muted);
+      padding: 0.65rem 1rem; background: var(--surface-raised);
+      border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.25rem;
     }
+    .grand-total strong { color: var(--text); font-weight: 600; }
 
-    .grand-total strong {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .job-group {
-      margin-bottom: 1.25rem;
-    }
-
-    .job-group:last-child {
-      margin-bottom: 0;
-    }
+    .job-group { margin-bottom: 1.25rem; }
+    .job-group:last-child { margin-bottom: 0; }
 
     .job-group-header {
-      display: flex;
-      align-items: baseline;
-      gap: 1rem;
-      padding: 0.6rem 0.85rem;
+      display: flex; align-items: baseline; gap: 1rem; padding: 0.6rem 0.85rem;
       background: var(--surface-raised);
       border-radius: var(--radius) var(--radius) 0 0;
-      border: 1px solid var(--border);
-      border-bottom: none;
+      border: 1px solid var(--border); border-bottom: none;
+    }
+    .job-group-header.collapsed {
+      border-radius: var(--radius);
+      border-bottom: 1px solid var(--border);
     }
 
-    .job-group-number {
-      font-family: var(--mono);
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .job-group-total {
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--success);
-    }
-
-    .job-group-meta {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--mono);
-      margin-left: auto;
-    }
+    .job-group-number { font-family: var(--mono); font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .job-group-total { font-family: var(--mono); font-size: 0.85rem; font-weight: 500; color: var(--success); }
+    .job-group-source { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+    .job-group-meta { font-size: 0.75rem; color: var(--text-muted); font-family: var(--mono); margin-left: auto; }
 
     .job-group-variants {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      padding: 0.3rem 0.85rem;
-      background: var(--surface-raised);
-      border-left: 1px solid var(--border);
-      border-right: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text-dim); padding: 0.3rem 0.85rem;
+      background: var(--surface-raised); border-left: 1px solid var(--border); border-right: 1px solid var(--border);
     }
 
     .job-group-results {
-      border: 1px solid var(--border);
-      border-radius: 0 0 var(--radius) var(--radius);
-      background: var(--bg);
-      max-height: 300px;
-      overflow-y: auto;
+      border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg); max-height: 300px; overflow-y: auto;
     }
-
-    .job-group-results::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .job-group-results::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .job-group-results::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
-    }
-
-    .job-group-results::-webkit-scrollbar-thumb:hover {
-      background: var(--text-dim);
-    }
+    .job-group-results::-webkit-scrollbar { width: 6px; }
+    .job-group-results::-webkit-scrollbar-track { background: transparent; }
+    .job-group-results::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .job-group-results::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
     .job-group-no-results {
-      padding: 0.75rem 0.85rem;
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      font-style: italic;
-      text-align: center;
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 var(--radius) var(--radius);
-      background: var(--bg);
+      padding: 0.75rem 0.85rem; color: var(--text-dim); font-size: 0.8rem; font-style: italic;
+      text-align: center; border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius); background: var(--bg);
     }
 
     .result-item {
-      display: flex;
-      align-items: baseline;
-      gap: 0.75rem;
-      padding: 0.65rem 0.85rem;
-      border-radius: 4px;
-      transition: background 0.1s;
+      display: flex; align-items: baseline; gap: 0.75rem; padding: 0.65rem 0.85rem;
+      border-radius: 4px; transition: background 0.1s;
     }
-
-    .result-item:hover {
-      background: var(--surface-hover);
-    }
+    .result-item:hover { background: var(--surface-hover); }
 
     .page-badge {
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-dim);
-      background: var(--surface-raised);
-      padding: 2px 8px;
-      border-radius: 4px;
-      white-space: nowrap;
-      min-width: 44px;
-      text-align: center;
-      flex-shrink: 0;
+      font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-dim);
+      background: var(--surface-raised); padding: 2px 8px; border-radius: 4px;
+      white-space: nowrap; min-width: 44px; text-align: center; flex-shrink: 0;
     }
 
     .result-context {
-      flex: 1;
-      min-width: 0;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      overflow-wrap: break-word;
+      flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px;
+      color: var(--text-muted); line-height: 1.6; overflow-wrap: break-word;
     }
 
     .result-context mark {
-      background: rgba(91, 138, 240, 0.25);
-      color: var(--accent-hover);
-      padding: 1px 3px;
-      border-radius: 3px;
-      font-weight: 500;
+      background: rgba(91, 138, 240, 0.25); color: var(--accent-hover);
+      padding: 1px 3px; border-radius: 3px; font-weight: 500;
     }
 
     .result-qty {
-      font-family: var(--mono);
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--accent);
-      white-space: nowrap;
-      flex-shrink: 0;
-      min-width: 5rem;
-      text-align: right;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 500; color: var(--accent);
+      white-space: nowrap; flex-shrink: 0; min-width: 5rem; text-align: right;
+    }
+
+    /* Phase 2 components */
+    .source-badge {
+      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+    }
+    .source-badge-manifest { color: var(--accent); background: var(--accent-soft); }
+    .source-badge-sg360 { color: var(--success); background: var(--success-soft); }
+    .source-badge-uniform { color: var(--warn); background: var(--warn-soft); }
+
+    .expand-btn {
+      font-family: var(--sans); font-size: 0.72rem; font-weight: 500;
+      padding: 0.2rem 0.6rem; background: transparent; color: var(--accent);
+      border: 1px solid var(--accent); border-radius: 4px; cursor: pointer;
+      transition: background 0.15s; margin-left: 0.5rem; white-space: nowrap;
+    }
+    .expand-btn:hover { background: var(--accent-soft); }
+
+    .job-detail {
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg); overflow: hidden; max-height: 500px; overflow-y: auto;
+    }
+    .job-detail::-webkit-scrollbar { width: 6px; }
+    .job-detail::-webkit-scrollbar-track { background: transparent; }
+    .job-detail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .trip-group { border-bottom: 1px solid var(--border); }
+    .trip-group:last-child { border-bottom: none; }
+
+    .trip-header {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      padding: 0.5rem 0.85rem; background: var(--surface); font-size: 0.78rem;
+    }
+    .trip-id { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+    .trip-total { font-family: var(--mono); font-weight: 500; color: var(--success); margin-left: auto; }
+
+    .dedup-note {
+      font-size: 0.75rem; color: var(--text-dim); padding: 0.5rem 0.85rem;
+      border-bottom: 1px solid var(--border); line-height: 1.5; font-style: italic;
+    }
+
+    .result-item.excluded { opacity: 0.45; }
+    .result-item.excluded .result-qty { text-decoration: line-through; }
+    .excluded-label {
+      font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim);
+      border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .fallback-warn {
+      background: var(--warn-soft); border: 1px solid rgba(240,164,91,0.2);
+      color: var(--warn); padding: 0.65rem 1rem; border-radius: var(--radius);
+      font-size: 0.8rem; margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -565,9 +379,9 @@
         <div>
           <div class="header-title">
             <h1>BOL Extractor</h1>
-            <span class="badge">Phase 1</span>
+            <span class="badge">Phase 2</span>
           </div>
-          <p class="subtitle">Search daily BOL reports for job numbers and view raw matches.</p>
+          <p class="subtitle">Search daily BOL reports for job numbers with document-aware deduplication.</p>
         </div>
         <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark mode">
           <span class="theme-label-dark">Dark</span>
@@ -594,6 +408,7 @@
         <div class="file-info-content">
           <span class="file-name" id="file-name"></span>
           <span class="file-meta" id="file-meta"></span>
+          <span class="file-meta" id="section-meta" hidden></span>
         </div>
         <button id="file-clear-btn" class="file-clear-btn" title="Clear file">&times;</button>
       </div>
@@ -624,6 +439,8 @@
     // --- State ---
     let pdfPages = null;
     let pdfjsLib = null;
+    let documentSections = null;
+    let useFallback = false;
 
     // --- DOM refs ---
     const dropZone = document.getElementById('drop-zone');
@@ -634,6 +451,7 @@
     const fileInfo = document.getElementById('file-info');
     const fileNameEl = document.getElementById('file-name');
     const fileMetaEl = document.getElementById('file-meta');
+    const sectionMetaEl = document.getElementById('section-meta');
     const fileClearBtn = document.getElementById('file-clear-btn');
     const searchInput = document.getElementById('search-input');
     const searchClearBtn = document.getElementById('search-clear-btn');
@@ -663,29 +481,29 @@
     }
 
     function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function showStatus(message, type) {
-      statusArea.innerHTML =
-        '<div class="status-msg status-' + type + '">' + escapeHtml(message) + '</div>';
+      statusArea.innerHTML = '<div class="status-msg status-' + type + '">' + escapeHtml(message) + '</div>';
     }
 
-    function clearStatus() {
-      statusArea.innerHTML = '';
-    }
+    function clearStatus() { statusArea.innerHTML = ''; }
 
     function extractCommaNumbers(lineText) {
       const matches = lineText.match(/\b\d{1,3}(,\d{3})+\b/g);
       if (!matches) return [];
-      return matches.map(s => ({
-        raw: s,
-        value: parseInt(s.replace(/,/g, ''), 10)
-      }));
+      return matches.map(s => ({ raw: s, value: parseInt(s.replace(/,/g, ''), 10) }));
+    }
+
+    function sectionTypeLabel(type) {
+      const map = { manifest: 'Manifest', sg360_bol: 'SG360 BOL', uniform_bol: 'Uniform BOL' };
+      return map[type] || type;
+    }
+
+    function sourceBadgeClass(type) {
+      const map = { manifest: 'source-badge-manifest', sg360_bol: 'source-badge-sg360', uniform_bol: 'source-badge-uniform' };
+      return 'source-badge ' + (map[type] || '');
     }
 
     // --- Line-aware PDF extraction ---
@@ -707,16 +525,11 @@
       const content = await page.getTextContent();
       const items = content.items.filter(item => item.str.trim().length > 0);
       if (items.length === 0) return [];
-
       const Y_TOLERANCE = 3;
-
-      // Sort by y descending (top to bottom on page)
       const sorted = [...items].sort((a, b) => b.transform[5] - a.transform[5]);
-
       const lineGroups = [];
       let currentLine = [sorted[0]];
       let currentY = sorted[0].transform[5];
-
       for (let i = 1; i < sorted.length; i++) {
         const item = sorted[i];
         const y = item.transform[5];
@@ -729,26 +542,262 @@
         }
       }
       lineGroups.push(currentLine);
-
-      // Sort each line left-to-right by x, then build text
       return lineGroups.map(group => {
         group.sort((a, b) => a.transform[4] - b.transform[4]);
         return buildLineText(group);
       });
     }
 
+    // --- Document classification ---
+
+    function classifySections(pages) {
+      const allLines = [];
+      for (const { pageNum, lines } of pages) {
+        for (let i = 0; i < lines.length; i++) {
+          allLines.push({ pageNum, lineIdx: i, text: lines[i] });
+        }
+      }
+
+      const sections = [];
+      let current = null;
+
+      for (let i = 0; i < allLines.length; i++) {
+        const line = allLines[i];
+        const upper = line.text.toUpperCase();
+        let type = null;
+
+        if (upper.includes('OUTGOING VEHICLE INSPECTION RECORD')) {
+          type = 'vehicle_inspection';
+        } else if (upper.includes('UNIFORM STRAIGHT BILL OF LADING')) {
+          type = 'uniform_bol';
+        } else if (upper.includes('SEGERDAHL GROUP MANIFEST')) {
+          type = 'manifest';
+        } else if (upper.includes('STRAIGHT BILL OF LADING')) {
+          const lo = Math.max(0, i - 5);
+          const hi = Math.min(allLines.length, i + 10);
+          let hasOriginal = false, hasUniform = false;
+          for (let j = lo; j < hi; j++) {
+            const t = allLines[j].text.toUpperCase();
+            if (t.includes('ORIGINAL')) hasOriginal = true;
+            if (t.includes('UNIFORM')) hasUniform = true;
+          }
+          if (hasOriginal && !hasUniform) type = 'sg360_bol';
+        }
+
+        if (type) {
+          if (current) sections.push(current);
+          current = { type, startPage: line.pageNum, endPage: line.pageNum, lines: [], metadata: {} };
+        }
+
+        if (current) {
+          current.lines.push(line);
+          current.endPage = line.pageNum;
+        }
+      }
+
+      if (current) sections.push(current);
+
+      for (const section of sections) {
+        for (const line of section.lines) {
+          if (!section.metadata.tripNumber) {
+            const m = line.text.match(/(VMI_T_\d{7})/i);
+            if (m) section.metadata.tripNumber = m[1].toUpperCase();
+          }
+          if (!section.metadata.manifestNumber) {
+            const m = line.text.match(/(VMI_M_\d{7})/i);
+            if (m) section.metadata.manifestNumber = m[1].toUpperCase();
+          }
+          if (!section.metadata.loadNumber) {
+            const m = line.text.match(/Load\s*#?\s*(\d+)/i);
+            if (m) section.metadata.loadNumber = m[1];
+          }
+        }
+      }
+
+      return sections;
+    }
+
+    // --- Section parsers ---
+
+    function parseManifestSection(section, baseJob) {
+      const pattern = new RegExp(
+        '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)', 'gi'
+      );
+      let trackingMyJob = false;
+      let total = null;
+      let totalPage = null;
+      let totalSource = null;
+      let totalLineText = null;
+      const entries = [];
+
+      for (const line of section.lines) {
+        const text = line.text;
+
+        // Check if this line has our searched job
+        pattern.lastIndex = 0;
+        const jobMatch = pattern.exec(text);
+
+        if (jobMatch) {
+          trackingMyJob = true;
+          const qty = extractCommaNumbers(text);
+          if (qty.length > 0) {
+            entries.push({
+              page: line.pageNum, lineText: text,
+              quantity: qty[0].value, raw: qty[0].raw, variant: jobMatch[1],
+            });
+          }
+        } else {
+          // Check if a different job's entry (has 6-digit number + quantities)
+          const otherJob = text.match(/(?:^|[\s,;|/\-#:])(\d{6})/);
+          if (otherJob && otherJob[1] !== baseJob && extractCommaNumbers(text).length > 0) {
+            trackingMyJob = false;
+          }
+        }
+
+        // Check for "Job Number Total"
+        if (/job\s*number\s*total/i.test(text) && trackingMyJob) {
+          const qty = extractCommaNumbers(text);
+          if (qty.length > 0) {
+            total = qty[0].value;
+            totalPage = line.pageNum;
+            totalSource = 'Job Number Total';
+            totalLineText = text;
+          } else {
+            const plain = text.match(/total\s+(\d+)/i);
+            if (plain) {
+              total = parseInt(plain[1], 10);
+              totalPage = line.pageNum;
+              totalSource = 'Job Number Total';
+              totalLineText = text;
+            }
+          }
+          trackingMyJob = false;
+        }
+      }
+
+      if (total === null && entries.length > 0) {
+        total = entries.reduce((s, e) => s + e.quantity, 0);
+        totalSource = 'Sum of ' + entries.length + ' pallet entries';
+        totalPage = entries[0].page;
+      }
+
+      return { total: total || 0, totalSource, totalPage, totalLineText, entries };
+    }
+
+    function parseSG360Section(section, baseJob) {
+      const pattern = new RegExp(
+        '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)', 'gi'
+      );
+      const entries = [];
+
+      for (const line of section.lines) {
+        pattern.lastIndex = 0;
+        const m = pattern.exec(line.text);
+        if (!m) continue;
+        const qty = extractCommaNumbers(line.text);
+        if (qty.length === 0) continue;
+        entries.push({
+          page: line.pageNum, lineText: line.text,
+          quantity: qty[0].value, raw: qty[0].raw, variant: m[1],
+        });
+      }
+
+      const total = entries.reduce((s, e) => s + e.quantity, 0);
+      return {
+        total,
+        totalSource: entries.length > 0 ? 'Sum of ' + entries.length + ' entries' : null,
+        totalPage: entries.length > 0 ? entries[0].page : null,
+        totalLineText: null,
+        entries,
+      };
+    }
+
+    function parseUniformSection(section, baseJob) {
+      return parseSG360Section(section, baseJob);
+    }
+
+    // --- Deduplication ---
+
+    function deduplicateJob(baseJob, sections) {
+      if (!sections || sections.length === 0) {
+        return { jobNumber: baseJob, deduplicatedTotal: 0, trips: [] };
+      }
+
+      const PRIORITY = { manifest: 3, sg360_bol: 2, uniform_bol: 1 };
+      const findings = [];
+
+      for (let si = 0; si < sections.length; si++) {
+        const section = sections[si];
+        if (section.type === 'vehicle_inspection') continue;
+
+        let result;
+        if (section.type === 'manifest') result = parseManifestSection(section, baseJob);
+        else if (section.type === 'sg360_bol') result = parseSG360Section(section, baseJob);
+        else if (section.type === 'uniform_bol') result = parseUniformSection(section, baseJob);
+
+        if (result && (result.total > 0 || result.entries.length > 0)) {
+          findings.push({
+            sectionType: section.type,
+            sectionIndex: si,
+            tripNumber: section.metadata.tripNumber || null,
+            total: result.total,
+            totalSource: result.totalSource,
+            totalPage: result.totalPage,
+            totalLineText: result.totalLineText,
+            entries: result.entries,
+          });
+        }
+      }
+
+      if (findings.length === 0) {
+        return { jobNumber: baseJob, deduplicatedTotal: 0, trips: [] };
+      }
+
+      // Group by trip
+      const tripGroups = new Map();
+      for (const f of findings) {
+        const key = f.tripNumber || 'unknown_' + f.sectionIndex;
+        if (!tripGroups.has(key)) tripGroups.set(key, []);
+        tripGroups.get(key).push(f);
+      }
+
+      const trips = [];
+      let deduplicatedTotal = 0;
+
+      for (const [tripKey, groupFindings] of tripGroups) {
+        groupFindings.sort((a, b) => (PRIORITY[b.sectionType] || 0) - (PRIORITY[a.sectionType] || 0));
+        const winner = groupFindings[0];
+        const excluded = groupFindings.slice(1).map(f => ({
+          sectionType: f.sectionType,
+          total: f.total,
+          reason: 'Duplicate of ' + sectionTypeLabel(winner.sectionType) + ' (same trip)',
+          entries: f.entries,
+        }));
+
+        deduplicatedTotal += winner.total;
+        trips.push({
+          tripNumber: tripKey.startsWith('unknown_') ? null : tripKey,
+          total: winner.total,
+          source: winner.sectionType,
+          sourceDetail: winner.totalSource,
+          sourcePage: winner.totalPage,
+          included: {
+            sectionType: winner.sectionType,
+            totalLineText: winner.totalLineText,
+            entries: winner.entries,
+          },
+          excluded,
+        });
+      }
+
+      return { jobNumber: baseJob, deduplicatedTotal, trips };
+    }
+
     // --- File handling ---
 
     dropZone.addEventListener('click', () => fileInput.click());
-
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('drag-over');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('drag-over');
-    });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
 
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -769,9 +818,7 @@
       clearStatus();
       resultsSection.hidden = true;
 
-      try {
-        await initPdfJs();
-      } catch {
+      try { await initPdfJs(); } catch {
         showStatus('Failed to load PDF.js library. Check your internet connection.', 'error');
         return;
       }
@@ -791,22 +838,37 @@
           const page = await pdf.getPage(i);
           const lines = await extractPageLines(page);
           pages.push({ pageNum: i, lines });
-
           const pct = Math.round((i / totalPages) * 100);
           progressFill.style.width = pct + '%';
           progressText.textContent = 'Extracting page ' + i + ' of ' + totalPages + '...';
-
-          if (i % 5 === 0) {
-            await new Promise(r => setTimeout(r, 0));
-          }
+          if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
         }
 
         pdfPages = pages;
+
+        // Phase 2: classify sections
+        progressText.textContent = 'Analyzing document structure...';
+        await new Promise(r => setTimeout(r, 0));
+        documentSections = classifySections(pdfPages);
+        const dataSections = documentSections.filter(s => s.type !== 'vehicle_inspection');
+        useFallback = dataSections.length === 0;
+
         progressArea.hidden = true;
         fileInfo.hidden = false;
         fileNameEl.textContent = file.name;
         fileMetaEl.textContent =
           totalPages + ' pages \u00b7 ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+        if (!useFallback) {
+          const counts = {};
+          for (const s of dataSections) counts[s.type] = (counts[s.type] || 0) + 1;
+          const parts = [];
+          for (const [t, c] of Object.entries(counts)) parts.push(c + ' ' + sectionTypeLabel(t));
+          sectionMetaEl.textContent = '\u00b7 ' + parts.join(', ');
+          sectionMetaEl.hidden = false;
+        } else {
+          sectionMetaEl.hidden = true;
+        }
 
         searchInput.disabled = false;
         searchClearBtn.disabled = false;
@@ -815,10 +877,7 @@
       } catch {
         progressArea.hidden = true;
         dropZone.hidden = false;
-        showStatus(
-          'Failed to extract PDF text. The file may be corrupted or password-protected.',
-          'error'
-        );
+        showStatus('Failed to extract PDF text. The file may be corrupted or password-protected.', 'error');
       }
     }
 
@@ -826,7 +885,10 @@
 
     fileClearBtn.addEventListener('click', () => {
       pdfPages = null;
+      documentSections = null;
+      useFallback = false;
       fileInfo.hidden = true;
+      sectionMetaEl.hidden = true;
       dropZone.hidden = false;
       searchInput.disabled = true;
       searchClearBtn.disabled = true;
@@ -837,7 +899,6 @@
       clearStatus();
     });
 
-    // --- Search clear ---
     searchClearBtn.addEventListener('click', () => {
       searchInput.value = '';
       resultsSection.hidden = true;
@@ -845,130 +906,124 @@
       searchInput.focus();
     });
 
+    // --- Event delegation for expand/collapse ---
+
+    resultsBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('.expand-btn');
+      if (!btn) return;
+      const group = btn.closest('.job-group');
+      const header = group.querySelector('.job-group-header');
+      const detail = group.querySelector('.job-detail');
+      if (!detail) return;
+      const wasHidden = detail.hidden;
+      detail.hidden = !wasHidden;
+      header.classList.toggle('collapsed', !wasHidden);
+      btn.textContent = wasHidden ? 'Hide' : 'Details';
+    });
+
     // --- Search ---
 
     searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') performSearch();
-    });
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
+
+    function parseJobInput() {
+      const jobNumbers = searchInput.value.trim()
+        .split(/[,\s]+/).map(s => s.trim()).filter(s => s.length > 0)
+        .map(s => { const m = s.match(/^(\d{6})/); return m ? m[1] : null; })
+        .filter(Boolean);
+      const uniqueJobs = [...new Set(jobNumbers)];
+      if (uniqueJobs.length === 0) { showStatus('Enter at least one valid 6-digit job number.', 'warn'); return null; }
+      if (uniqueJobs.length > 10) { showStatus('Maximum 10 job numbers at a time.', 'warn'); return null; }
+      return uniqueJobs;
+    }
+
+    function scanJobRaw(baseJob) {
+      const pattern = new RegExp('(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)', 'gi');
+      let matchCount = 0;
+      const variants = new Set();
+      const pagesWithMatches = new Set();
+      const lineHits = new Map();
+      for (const { pageNum, lines } of pdfPages) {
+        for (let li = 0; li < lines.length; li++) {
+          const line = lines[li];
+          pattern.lastIndex = 0;
+          let m;
+          while ((m = pattern.exec(line)) !== null) {
+            matchCount++;
+            variants.add(m[1].toUpperCase());
+            pagesWithMatches.add(pageNum);
+            const key = pageNum + ':' + li;
+            if (!lineHits.has(key)) {
+              const commaNumbers = extractCommaNumbers(line);
+              lineHits.set(key, {
+                pageNum, lineText: line,
+                primaryQty: commaNumbers.length > 0 ? commaNumbers[0] : null,
+              });
+            }
+          }
+        }
+      }
+      return {
+        matchCount,
+        lineHits: [...lineHits.values()],
+        variants: [...variants].sort(),
+        pages: [...pagesWithMatches].sort((a, b) => a - b),
+      };
+    }
 
     function performSearch() {
       clearStatus();
       resultsSection.hidden = true;
-
       if (!pdfPages) return;
 
-      // Parse comma/space-separated job numbers
-      const jobNumbers = searchInput.value.trim()
-        .split(/[,\s]+/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(s => { const m = s.match(/^(\d{6})/); return m ? m[1] : null; })
-        .filter(Boolean);
+      const uniqueJobs = parseJobInput();
+      if (!uniqueJobs) return;
 
-      const uniqueJobs = [...new Set(jobNumbers)];
-
-      if (uniqueJobs.length === 0) {
-        showStatus('Enter at least one valid 6-digit job number.', 'warn');
-        return;
-      }
-      if (uniqueJobs.length > 10) {
-        showStatus('Maximum 10 job numbers at a time.', 'warn');
-        return;
-      }
-
-      // Search for each job
-      const allResults = [];
-      let totalMatches = 0;
-
-      for (const baseJob of uniqueJobs) {
-        const pattern = new RegExp(
-          '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)',
-          'gi'
-        );
-
-        let matchCount = 0;
-        const variants = new Set();
-        const pagesWithMatches = new Set();
-        const lineHits = new Map(); // "pageNum:lineIdx" -> { pageNum, lineText }
-
-        for (const { pageNum, lines } of pdfPages) {
-          for (let li = 0; li < lines.length; li++) {
-            const line = lines[li];
-            pattern.lastIndex = 0;
-            let m;
-            while ((m = pattern.exec(line)) !== null) {
-              matchCount++;
-              variants.add(m[1].toUpperCase());
-              pagesWithMatches.add(pageNum);
-              const key = pageNum + ':' + li;
-              if (!lineHits.has(key)) {
-                const commaNumbers = extractCommaNumbers(line);
-                lineHits.set(key, {
-                  pageNum,
-                  lineText: line,
-                  primaryQty: commaNumbers.length > 0 ? commaNumbers[0] : null,
-                });
-              }
-            }
-          }
+      if (useFallback) {
+        // Phase 1 fallback
+        const allResults = [];
+        let totalMatches = 0;
+        for (const baseJob of uniqueJobs) {
+          const raw = scanJobRaw(baseJob);
+          totalMatches += raw.matchCount;
+          allResults.push({ baseJob, ...raw });
         }
-
-        totalMatches += matchCount;
-        allResults.push({
-          baseJob,
-          matchCount,
-          lineHits: [...lineHits.values()],
-          variants: [...variants].sort(),
-          pages: [...pagesWithMatches].sort((a, b) => a - b),
-        });
+        renderFallbackResults(allResults, totalMatches);
+        return;
       }
 
-      renderResults(allResults, totalMatches);
+      // Phase 2: deduplicated search
+      const allResults = [];
+      for (const baseJob of uniqueJobs) {
+        const dedup = deduplicateJob(baseJob, documentSections);
+        const raw = scanJobRaw(baseJob);
+        allResults.push({ ...dedup, raw });
+      }
+      renderPhase2Results(allResults);
     }
 
-    // --- Search display helpers ---
+    // --- Display helpers ---
 
     function truncateLine(line, baseJob) {
       if (line.length <= 200) return { text: line, pre: false, post: false };
-
       const idx = line.search(new RegExp(baseJob, 'i'));
-      if (idx === -1) {
-        return { text: line.substring(0, 200), pre: false, post: true };
-      }
-
+      if (idx === -1) return { text: line.substring(0, 200), pre: false, post: true };
       let start = Math.max(0, idx - 100);
       let end = start + 200;
-      if (end > line.length) {
-        end = line.length;
-        start = Math.max(0, end - 200);
-      }
-
-      return {
-        text: line.substring(start, end),
-        pre: start > 0,
-        post: end < line.length,
-      };
+      if (end > line.length) { end = line.length; start = Math.max(0, end - 200); }
+      return { text: line.substring(start, end), pre: start > 0, post: end < line.length };
     }
 
     function highlightInLine(text, baseJob) {
-      const pattern = new RegExp(
-        '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)',
-        'gi'
-      );
-
+      const pattern = new RegExp('(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)', 'gi');
       const spans = [];
       let m;
       while ((m = pattern.exec(text)) !== null) {
-        const refStart = m.index + m[0].length - m[1].length;
-        const refEnd = m.index + m[0].length;
-        spans.push({ start: refStart, end: refEnd });
+        const s = m.index + m[0].length - m[1].length;
+        spans.push({ start: s, end: m.index + m[0].length });
       }
-
       if (spans.length === 0) return escapeHtml(text);
-
-      let html = '';
-      let pos = 0;
+      let html = '', pos = 0;
       for (const s of spans) {
         html += escapeHtml(text.substring(pos, s.start));
         html += '<mark>' + escapeHtml(text.substring(s.start, s.end)) + '</mark>';
@@ -978,26 +1033,153 @@
       return html;
     }
 
-    // --- Render results ---
+    function getSourceSummary(trips) {
+      const counts = {};
+      for (const t of trips) {
+        const label = sectionTypeLabel(t.source);
+        counts[label] = (counts[label] || 0) + 1;
+      }
+      const parts = [];
+      for (const [label, c] of Object.entries(counts)) {
+        parts.push(c > 1 ? c + ' ' + label + ' totals' : label + ' total');
+      }
+      return parts.length > 0 ? 'From ' + parts.join(' + ') : '';
+    }
 
-    function renderResults(allResults, totalMatches) {
+    function getDedupNote(trip) {
+      const srcLabel = sectionTypeLabel(trip.source);
+      let note = srcLabel;
+      if (trip.sourceDetail === 'Job Number Total') {
+        note += ' Job Number Total (' + trip.total.toLocaleString() + ' on page ' + trip.sourcePage + ') used as authoritative source.';
+      } else if (trip.sourceDetail) {
+        note += ' (' + trip.total.toLocaleString() + ') used.';
+      }
+      if (trip.excluded.length > 0) {
+        const types = [...new Set(trip.excluded.map(e => sectionTypeLabel(e.sectionType)))];
+        note += ' ' + types.join(', ') + ' entries excluded as duplicate.';
+      }
+      return note;
+    }
+
+    function renderEntryLine(entry, baseJob, extraClass, trailingHtml) {
+      const { text, pre, post } = truncateLine(entry.lineText, baseJob);
+      const highlighted = highlightInLine(text, baseJob);
+      return '<div class="result-item' + (extraClass ? ' ' + extraClass : '') + '">' +
+        '<span class="page-badge">p.' + entry.page + '</span>' +
+        '<span class="result-context">' + (pre ? '\u2026' : '') + highlighted + (post ? '\u2026' : '') + '</span>' +
+        (entry.raw ? '<span class="result-qty">' + escapeHtml(entry.raw) + '</span>' : '') +
+        (trailingHtml || '') + '</div>';
+    }
+
+    // --- Render: Phase 2 ---
+
+    function renderPhase2Results(allResults) {
+      resultsSection.hidden = false;
+      resultsTitle.textContent = 'Results';
+
+      const jobsWithData = allResults.filter(r => r.deduplicatedTotal > 0);
+      matchCountEl.textContent = allResults.length + ' job' + (allResults.length !== 1 ? 's' : '') +
+        (jobsWithData.length > 0 ? ' \u00b7 deduplicated' : '');
+
+      let html = '';
+
+      // Grand total for 2+ jobs
+      if (allResults.length >= 2) {
+        const grandTotal = allResults.reduce((s, r) => s + r.deduplicatedTotal, 0);
+        if (grandTotal > 0) {
+          html += '<div class="grand-total">Total across ' + allResults.length +
+            ' jobs: <strong>' + grandTotal.toLocaleString() + ' pcs</strong></div>';
+        }
+      }
+
+      for (const result of allResults) {
+        const { jobNumber, deduplicatedTotal, trips, raw } = result;
+        html += '<div class="job-group">';
+
+        if (trips.length === 0) {
+          // No matches
+          html += '<div class="job-group-header">' +
+            '<span class="job-group-number">' + escapeHtml(jobNumber) + '</span>' +
+            '<span class="job-group-meta">no matches</span></div>';
+          html += '<div class="job-group-no-results">No occurrences found in this document.</div>';
+        } else {
+          // Header (collapsed by default)
+          const srcSummary = getSourceSummary(trips);
+          const tripLabel = trips.length + ' trip' + (trips.length !== 1 ? 's' : '');
+          html += '<div class="job-group-header collapsed">' +
+            '<span class="job-group-number">' + escapeHtml(jobNumber) + '</span>';
+          if (deduplicatedTotal > 0) {
+            html += '<span class="job-group-total">' + deduplicatedTotal.toLocaleString() + ' pcs</span>';
+          }
+          if (srcSummary) {
+            html += '<span class="job-group-source">' + escapeHtml(srcSummary) + '</span>';
+          }
+          html += '<span class="job-group-meta">' + tripLabel + '</span>' +
+            '<button class="expand-btn">Details</button></div>';
+
+          // Detail panel
+          html += '<div class="job-detail" hidden>';
+          for (const trip of trips) {
+            html += '<div class="trip-group">';
+
+            // Trip header
+            html += '<div class="trip-header">';
+            html += '<span class="trip-id">' + (trip.tripNumber || 'Unknown trip') + '</span>';
+            html += '<span class="' + sourceBadgeClass(trip.source) + '">' + sectionTypeLabel(trip.source) + '</span>';
+            html += '<span class="trip-total">' + trip.total.toLocaleString() + '</span>';
+            html += '</div>';
+
+            // Dedup note
+            const note = getDedupNote(trip);
+            if (note) html += '<div class="dedup-note">' + escapeHtml(note) + '</div>';
+
+            // Included entries
+            if (trip.included.totalLineText) {
+              html += renderEntryLine(
+                { page: trip.sourcePage, lineText: trip.included.totalLineText, raw: trip.total.toLocaleString() },
+                jobNumber, '', ''
+              );
+            }
+            for (const entry of trip.included.entries) {
+              html += renderEntryLine(entry, jobNumber, '', '');
+            }
+
+            // Excluded entries
+            for (const exc of trip.excluded) {
+              for (const entry of exc.entries) {
+                html += renderEntryLine(entry, jobNumber, 'excluded',
+                  '<span class="excluded-label">Duplicate</span>');
+              }
+            }
+
+            html += '</div>'; // trip-group
+          }
+          html += '</div>'; // job-detail
+        }
+
+        html += '</div>'; // job-group
+      }
+
+      resultsBody.innerHTML = html;
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // --- Render: Phase 1 fallback ---
+
+    function renderFallbackResults(allResults, totalMatches) {
       resultsSection.hidden = false;
       resultsTitle.textContent = 'Results';
       matchCountEl.textContent =
         totalMatches + ' match' + (totalMatches !== 1 ? 'es' : '') +
         ' across ' + allResults.length + ' job' + (allResults.length !== 1 ? 's' : '');
 
-      // Compute max quantity per job for headers and grand total
       const jobMaxQtys = allResults.map(({ lineHits }) => {
-        const qtyValues = lineHits
-          .filter(h => h.primaryQty)
-          .map(h => h.primaryQty.value);
-        return qtyValues.length > 0 ? Math.max(...qtyValues) : 0;
+        const v = lineHits.filter(h => h.primaryQty).map(h => h.primaryQty.value);
+        return v.length > 0 ? Math.max(...v) : 0;
       });
 
-      let html = '';
+      let html = '<div class="fallback-warn">Could not identify document sections. Showing raw search results.</div>';
 
-      // Grand total bar (only for 2+ jobs)
       if (allResults.length >= 2) {
         const grandTotal = jobMaxQtys.reduce((a, b) => a + b, 0);
         if (grandTotal > 0) {
@@ -1011,29 +1193,22 @@
         const maxQty = jobMaxQtys[ji];
         html += '<div class="job-group">';
 
-        // Header with max quantity
         html += '<div class="job-group-header">';
         html += '<span class="job-group-number">' + escapeHtml(baseJob) + '</span>';
-        if (maxQty > 0) {
-          html += '<span class="job-group-total">' + maxQty.toLocaleString() + ' pcs</span>';
-        }
+        if (maxQty > 0) html += '<span class="job-group-total">' + maxQty.toLocaleString() + ' pcs</span>';
         if (matchCount > 0) {
-          html += '<span class="job-group-meta">' +
-            matchCount + ' match' + (matchCount !== 1 ? 'es' : '') +
-            ' on page' + (pages.length !== 1 ? 's' : '') + ' ' + pages.join(', ') +
-            '</span>';
+          html += '<span class="job-group-meta">' + matchCount + ' match' + (matchCount !== 1 ? 'es' : '') +
+            ' on page' + (pages.length !== 1 ? 's' : '') + ' ' + pages.join(', ') + '</span>';
         } else {
           html += '<span class="job-group-meta">no matches</span>';
         }
         html += '</div>';
 
-        // Variants (only if more than one)
         if (variants.length > 1) {
           html += '<div class="job-group-variants">Variants: ' +
             variants.map(v => escapeHtml(v)).join(', ') + '</div>';
         }
 
-        // Match lines or no-results
         if (matchCount > 0) {
           html += '<div class="job-group-results">';
           for (const hit of lineHits) {
@@ -1041,12 +1216,8 @@
             const highlighted = highlightInLine(text, baseJob);
             html += '<div class="result-item">' +
               '<span class="page-badge">p.' + hit.pageNum + '</span>' +
-              '<span class="result-context">' +
-              (pre ? '\u2026' : '') + highlighted + (post ? '\u2026' : '') +
-              '</span>';
-            if (hit.primaryQty) {
-              html += '<span class="result-qty">' + escapeHtml(hit.primaryQty.raw) + '</span>';
-            }
+              '<span class="result-context">' + (pre ? '\u2026' : '') + highlighted + (post ? '\u2026' : '') + '</span>';
+            if (hit.primaryQty) html += '<span class="result-qty">' + escapeHtml(hit.primaryQty.raw) + '</span>';
             html += '</div>';
           }
           html += '</div>';
