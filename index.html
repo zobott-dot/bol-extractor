@@ -753,6 +753,26 @@
         return { jobNumber: baseJob, deduplicatedTotal: 0, trips: [] };
       }
 
+      // Resolve null trip numbers by section proximity.
+      // Uniform BOL sections lack VMI_T trip numbers. Link them to the
+      // nearest section (preferring the next one forward) that has a trip,
+      // since each Uniform BOL typically precedes its corresponding Manifest.
+      for (const f of findings) {
+        if (f.tripNumber) continue;
+        let best = null;
+        for (const other of findings) {
+          if (!other.tripNumber || other.sectionIndex <= f.sectionIndex) continue;
+          if (!best || other.sectionIndex < best.sectionIndex) best = other;
+        }
+        if (!best) {
+          for (const other of findings) {
+            if (!other.tripNumber || other.sectionIndex >= f.sectionIndex) continue;
+            if (!best || other.sectionIndex > best.sectionIndex) best = other;
+          }
+        }
+        if (best) f.tripNumber = best.tripNumber;
+      }
+
       // Group by trip
       const tripGroups = new Map();
       for (const f of findings) {
