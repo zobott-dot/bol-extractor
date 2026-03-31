@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOL Extractor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-hover: #222632;
+      --surface-raised: #252a38;
+      --border: #2e3348;
+      --border-focus: #5b8af0;
+      --text: #e2e4eb;
+      --text-muted: #8b90a5;
+      --text-dim: #5c6178;
+      --accent: #5b8af0;
+      --accent-soft: rgba(91, 138, 240, 0.12);
+      --accent-hover: #7ba3f7;
+      --success: #4ade80;
+      --success-soft: rgba(74, 222, 128, 0.1);
+      --warn: #f0a45b;
+      --warn-soft: rgba(240, 164, 91, 0.1);
+      --error: #f07070;
+      --error-soft: rgba(240, 112, 112, 0.1);
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    header {
+      margin-bottom: 32px;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 3px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    #drop-zone:hover,
+    #drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .drop-icon {
+      display: block;
+      font-size: 36px;
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+
+    #drop-zone p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    #drop-zone .drop-hint {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    #progress-area {
+      padding: 16px 0 0;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--surface-raised);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.15s ease;
+    }
+
+    .progress-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    #file-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--success-soft);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+    }
+
+    .file-info-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--success);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-meta {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .clear-btn:hover {
+      color: var(--error);
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    #search-input {
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #search-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    #search-input:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    #search-btn {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    #search-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    #search-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 10px;
+    }
+
+    #status-area:empty {
+      display: none;
+    }
+
+    .status-msg {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .status-error {
+      background: var(--error-soft);
+      border: 1px solid rgba(240, 112, 112, 0.2);
+      color: var(--error);
+    }
+
+    .status-warn {
+      background: var(--warn-soft);
+      border: 1px solid rgba(240, 164, 91, 0.2);
+      color: var(--warn);
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .results-header h2 {
+      margin-bottom: 0;
+    }
+
+    .match-count {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .results-summary {
+      background: var(--accent-soft);
+      border: 1px solid rgba(91, 138, 240, 0.15);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 16px 0;
+      line-height: 1.7;
+    }
+
+    .results-summary .mono {
+      font-family: var(--mono);
+    }
+
+    .results-list {
+      max-height: 500px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .results-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .results-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .results-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .results-list::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
+    .result-item {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      transition: background 0.1s;
+    }
+
+    .result-item:hover {
+      background: var(--surface-hover);
+    }
+
+    .page-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-dim);
+      background: var(--surface-raised);
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      min-width: 44px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .result-context {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      overflow-wrap: break-word;
+    }
+
+    .result-context mark {
+      background: rgba(91, 138, 240, 0.25);
+      color: var(--accent-hover);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .no-results .mono {
+      font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-row">
+        <h1>BOL Extractor</h1>
+        <span class="badge">Phase 1</span>
+      </div>
+      <p class="subtitle">Search daily BOL reports for job numbers and view raw matches.</p>
+    </header>
+
+    <section class="card" id="upload-section">
+      <h2>Load PDF</h2>
+      <div id="drop-zone">
+        <span class="drop-icon">&#128196;</span>
+        <p>Drag and drop a PDF here, or click to browse</p>
+        <p class="drop-hint">Accepts .pdf files only</p>
+        <input type="file" id="file-input" accept=".pdf" hidden>
+      </div>
+      <div id="progress-area" hidden>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p id="progress-text" class="progress-text">Extracting...</p>
+      </div>
+      <div id="file-info" hidden>
+        <div class="file-info-content">
+          <span class="file-name" id="file-name"></span>
+          <span class="file-meta" id="file-meta"></span>
+        </div>
+        <button id="clear-btn" class="clear-btn" title="Clear file">&times;</button>
+      </div>
+    </section>
+
+    <section class="card" id="search-section">
+      <h2>Search</h2>
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Enter 6-digit job number" maxlength="10" disabled>
+        <button id="search-btn" disabled>Search</button>
+      </div>
+      <p class="hint">Enter the base job number (e.g., 159650). Suffix variants will be found automatically.</p>
+    </section>
+
+    <div id="status-area"></div>
+
+    <section class="card" id="results-section" hidden>
+      <div class="results-header">
+        <h2 id="results-title">Results</h2>
+        <span class="match-count" id="match-count"></span>
+      </div>
+      <div id="results-summary" class="results-summary"></div>
+      <div id="results-list" class="results-list"></div>
+      <div id="no-results" class="no-results" hidden></div>
+    </section>
+  </div>
+
+  <script type="module">
+    let pdfPages = null;
+    let pdfjsLib = null;
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const progressArea = document.getElementById('progress-area');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const fileInfo = document.getElementById('file-info');
+    const fileNameEl = document.getElementById('file-name');
+    const fileMetaEl = document.getElementById('file-meta');
+    const clearBtn = document.getElementById('clear-btn');
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const statusArea = document.getElementById('status-area');
+    const resultsSection = document.getElementById('results-section');
+    const resultsTitle = document.getElementById('results-title');
+    const matchCountEl = document.getElementById('match-count');
+    const resultsSummary = document.getElementById('results-summary');
+    const resultsList = document.getElementById('results-list');
+    const noResults = document.getElementById('no-results');
+
+    async function initPdfJs() {
+      if (pdfjsLib) return;
+      pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function showStatus(message, type) {
+      statusArea.innerHTML =
+        '<div class="status-msg status-' + type + '">' + escapeHtml(message) + '</div>';
+    }
+
+    function clearStatus() {
+      statusArea.innerHTML = '';
+    }
+
+    // --- File handling ---
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
+        handleFile(file);
+      } else {
+        showStatus('Please drop a valid PDF file.', 'warn');
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    });
+
+    async function handleFile(file) {
+      clearStatus();
+      resultsSection.hidden = true;
+
+      try {
+        await initPdfJs();
+      } catch {
+        showStatus('Failed to load PDF.js library. Check your internet connection.', 'error');
+        return;
+      }
+
+      dropZone.hidden = true;
+      progressArea.hidden = false;
+      progressFill.style.width = '0%';
+      progressText.textContent = 'Loading PDF...';
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const totalPages = pdf.numPages;
+        const pages = [];
+
+        for (let i = 1; i <= totalPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const text = textContent.items.map(item => item.str).join(' ');
+          pages.push({ pageNum: i, text });
+
+          const pct = Math.round((i / totalPages) * 100);
+          progressFill.style.width = pct + '%';
+          progressText.textContent = 'Extracting page ' + i + ' of ' + totalPages + '...';
+
+          if (i % 5 === 0) {
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+
+        pdfPages = pages;
+        progressArea.hidden = true;
+        fileInfo.hidden = false;
+        fileNameEl.textContent = file.name;
+        fileMetaEl.textContent =
+          totalPages + ' pages \u00b7 ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+        searchInput.disabled = false;
+        searchBtn.disabled = false;
+        searchInput.focus();
+      } catch {
+        progressArea.hidden = true;
+        dropZone.hidden = false;
+        showStatus(
+          'Failed to extract PDF text. The file may be corrupted or password-protected.',
+          'error'
+        );
+      }
+    }
+
+    // --- Clear / Reset ---
+
+    clearBtn.addEventListener('click', () => {
+      pdfPages = null;
+      fileInfo.hidden = true;
+      dropZone.hidden = false;
+      searchInput.disabled = true;
+      searchBtn.disabled = true;
+      searchInput.value = '';
+      fileInput.value = '';
+      resultsSection.hidden = true;
+      clearStatus();
+    });
+
+    // --- Search ---
+
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+
+    function performSearch() {
+      clearStatus();
+      resultsSection.hidden = true;
+
+      if (!pdfPages) return;
+
+      const raw = searchInput.value.trim();
+      const baseMatch = raw.match(/^(\d{6})/);
+      if (!baseMatch) {
+        showStatus('Enter a valid 6-digit job number.', 'warn');
+        return;
+      }
+
+      const baseJob = baseMatch[1];
+      const pattern = new RegExp(
+        '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)',
+        'gi'
+      );
+
+      const matches = [];
+      const variants = new Set();
+      const pagesWithMatches = new Set();
+
+      for (const { pageNum, text } of pdfPages) {
+        pattern.lastIndex = 0;
+        let m;
+        while ((m = pattern.exec(text)) !== null) {
+          const jobRef = m[1];
+          variants.add(jobRef.toUpperCase());
+          pagesWithMatches.add(pageNum);
+
+          const refStart = m.index + m[0].length - m[1].length;
+          const refEnd = m.index + m[0].length;
+          const ctxStart = Math.max(0, refStart - 40);
+          const ctxEnd = Math.min(text.length, refEnd + 40);
+
+          matches.push({
+            pageNum,
+            jobRef,
+            before: text.substring(ctxStart, refStart),
+            after: text.substring(refEnd, ctxEnd),
+            trimmedLeft: ctxStart > 0,
+            trimmedRight: ctxEnd < text.length
+          });
+        }
+      }
+
+      renderResults(baseJob, matches, variants, pagesWithMatches);
+    }
+
+    function renderResults(baseJob, matches, variants, pagesWithMatches) {
+      resultsSection.hidden = false;
+      resultsTitle.innerHTML =
+        'Results for <span style="font-family:var(--mono)">' + escapeHtml(baseJob) + '</span>';
+
+      if (matches.length === 0) {
+        matchCountEl.textContent = '';
+        resultsSummary.hidden = true;
+        resultsList.hidden = true;
+        noResults.hidden = false;
+        noResults.innerHTML =
+          'No occurrences of <span class="mono">' + escapeHtml(baseJob) +
+          '</span> found in this document.';
+        return;
+      }
+
+      matchCountEl.textContent = matches.length + ' match' + (matches.length !== 1 ? 'es' : '');
+
+      const sortedPages = [...pagesWithMatches].sort((a, b) => a - b);
+      const variantList = [...variants].sort();
+      let summary =
+        'Found <strong>' + matches.length + '</strong> occurrence' +
+        (matches.length !== 1 ? 's' : '') +
+        ' across <strong>' + sortedPages.length + '</strong> page' +
+        (sortedPages.length !== 1 ? 's' : '') +
+        ' (<span class="mono">' + sortedPages.join(', ') + '</span>).';
+      if (variantList.length > 1) {
+        summary +=
+          '<br>Variants found: <span class="mono">' +
+          variantList.map(v => escapeHtml(v)).join(', ') + '</span>';
+      }
+      resultsSummary.innerHTML = summary;
+      resultsSummary.hidden = false;
+      resultsList.hidden = false;
+      noResults.hidden = true;
+
+      resultsList.innerHTML = matches
+        .map((m) => {
+          const prefix = m.trimmedLeft ? '\u2026' : '';
+          const suffix = m.trimmedRight ? '\u2026' : '';
+          return (
+            '<div class="result-item">' +
+            '<span class="page-badge">p.' + m.pageNum + '</span>' +
+            '<span class="result-context">' +
+            escapeHtml(prefix + m.before) +
+            '<mark>' + escapeHtml(m.jobRef) + '</mark>' +
+            escapeHtml(m.after + suffix) +
+            '</span></div>'
+          );
+        })
+        .join('');
+
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</body>
+</html>
