@@ -314,6 +314,22 @@
       color: var(--text-muted);
     }
 
+    .grand-total {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 0.65rem 1rem;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.25rem;
+    }
+
+    .grand-total strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
     .job-group {
       margin-bottom: 1.25rem;
     }
@@ -857,17 +873,35 @@
         totalMatches + ' match' + (totalMatches !== 1 ? 'es' : '') +
         ' across ' + allResults.length + ' job' + (allResults.length !== 1 ? 's' : '');
 
+      // Compute max quantity per job for headers and grand total
+      const jobMaxQtys = allResults.map(({ lineHits }) => {
+        const qtyValues = lineHits
+          .filter(h => h.primaryQty)
+          .map(h => h.primaryQty.value);
+        return qtyValues.length > 0 ? Math.max(...qtyValues) : 0;
+      });
+
       let html = '';
 
-      for (const { baseJob, matchCount, lineHits, variants, pages } of allResults) {
+      // Grand total bar (only for 2+ jobs)
+      if (allResults.length >= 2) {
+        const grandTotal = jobMaxQtys.reduce((a, b) => a + b, 0);
+        if (grandTotal > 0) {
+          html += '<div class="grand-total">Total across ' + allResults.length +
+            ' jobs: <strong>' + grandTotal.toLocaleString() + ' pcs</strong></div>';
+        }
+      }
+
+      for (let ji = 0; ji < allResults.length; ji++) {
+        const { baseJob, matchCount, lineHits, variants, pages } = allResults[ji];
+        const maxQty = jobMaxQtys[ji];
         html += '<div class="job-group">';
 
-        // Header with total
-        const total = lineHits.reduce((sum, h) => sum + (h.primaryQty ? h.primaryQty.value : 0), 0);
+        // Header with max quantity
         html += '<div class="job-group-header">';
         html += '<span class="job-group-number">' + escapeHtml(baseJob) + '</span>';
-        if (total > 0) {
-          html += '<span class="job-group-total">' + total.toLocaleString() + ' pieces (raw)</span>';
+        if (maxQty > 0) {
+          html += '<span class="job-group-total">' + maxQty.toLocaleString() + ' pcs</span>';
         }
         if (matchCount > 0) {
           html += '<span class="job-group-meta">' +
