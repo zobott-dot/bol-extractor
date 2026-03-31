@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BOL Extractor</title>
+  <script>
+    document.documentElement.setAttribute('data-theme',
+      localStorage.getItem('bol-theme') || 'dark'
+    );
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -38,6 +43,27 @@
       --radius-lg: 12px;
     }
 
+    [data-theme="light"] {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface-hover: #f0f1f4;
+      --surface-raised: #e8eaef;
+      --border: #d1d5e0;
+      --border-focus: #4a7ae5;
+      --text: #1a1d27;
+      --text-muted: #5c6178;
+      --text-dim: #8b90a5;
+      --accent: #4a7ae5;
+      --accent-soft: rgba(74, 122, 229, 0.1);
+      --accent-hover: #3a68d4;
+      --success: #16a34a;
+      --success-soft: rgba(22, 163, 74, 0.08);
+      --warn: #d97706;
+      --warn-soft: rgba(217, 119, 6, 0.08);
+      --error: #dc2626;
+      --error-soft: rgba(220, 38, 38, 0.07);
+    }
+
     body {
       font-family: var(--sans);
       background: var(--bg);
@@ -59,6 +85,12 @@
     }
 
     .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .header-title {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -87,6 +119,29 @@
       color: var(--text-muted);
       font-size: 15px;
     }
+
+    .theme-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.4rem 0.6rem;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    [data-theme="dark"] .theme-icon-light { display: none; }
+    [data-theme="dark"] .theme-icon-dark { display: inline; }
+    [data-theme="light"] .theme-icon-dark { display: none; }
+    [data-theme="light"] .theme-icon-light { display: inline; }
 
     .card {
       background: var(--surface);
@@ -198,7 +253,7 @@
       white-space: nowrap;
     }
 
-    .clear-btn {
+    .file-clear-btn {
       background: none;
       border: none;
       color: var(--text-dim);
@@ -210,7 +265,7 @@
       flex-shrink: 0;
     }
 
-    .clear-btn:hover {
+    .file-clear-btn:hover {
       color: var(--error);
     }
 
@@ -264,6 +319,30 @@
     }
 
     #search-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .search-clear-btn {
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      background: var(--surface-raised);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .search-clear-btn:hover:not(:disabled) {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .search-clear-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -477,10 +556,18 @@
   <div class="container">
     <header>
       <div class="header-row">
-        <h1>BOL Extractor</h1>
-        <span class="badge">Phase 1</span>
+        <div>
+          <div class="header-title">
+            <h1>BOL Extractor</h1>
+            <span class="badge">Phase 1</span>
+          </div>
+          <p class="subtitle">Search daily BOL reports for job numbers and view raw matches.</p>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark mode">
+          <span class="theme-icon-dark">&#9789;</span>
+          <span class="theme-icon-light">&#9788;</span>
+        </button>
       </div>
-      <p class="subtitle">Search daily BOL reports for job numbers and view raw matches.</p>
     </header>
 
     <section class="card" id="upload-section">
@@ -502,7 +589,7 @@
           <span class="file-name" id="file-name"></span>
           <span class="file-meta" id="file-meta"></span>
         </div>
-        <button id="clear-btn" class="clear-btn" title="Clear file">&times;</button>
+        <button id="file-clear-btn" class="file-clear-btn" title="Clear file">&times;</button>
       </div>
     </section>
 
@@ -510,6 +597,7 @@
       <h2>Search</h2>
       <div class="search-row">
         <input type="text" id="search-input" placeholder="Enter job numbers separated by commas (up to 10)" maxlength="80" disabled>
+        <button id="search-clear-btn" class="search-clear-btn" disabled>Clear</button>
         <button id="search-btn" disabled>Search</button>
       </div>
       <p class="hint">Enter 6-digit job numbers separated by commas (e.g., 159650, 159652, 159653).</p>
@@ -540,14 +628,24 @@
     const fileInfo = document.getElementById('file-info');
     const fileNameEl = document.getElementById('file-name');
     const fileMetaEl = document.getElementById('file-meta');
-    const clearBtn = document.getElementById('clear-btn');
+    const fileClearBtn = document.getElementById('file-clear-btn');
     const searchInput = document.getElementById('search-input');
+    const searchClearBtn = document.getElementById('search-clear-btn');
     const searchBtn = document.getElementById('search-btn');
     const statusArea = document.getElementById('status-area');
     const resultsSection = document.getElementById('results-section');
     const resultsTitle = document.getElementById('results-title');
     const matchCountEl = document.getElementById('match-count');
     const resultsBody = document.getElementById('results-body');
+
+    // --- Theme toggle ---
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('bol-theme', next);
+    });
 
     // --- Utilities ---
 
@@ -705,6 +803,7 @@
           totalPages + ' pages \u00b7 ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
         searchInput.disabled = false;
+        searchClearBtn.disabled = false;
         searchBtn.disabled = false;
         searchInput.focus();
       } catch {
@@ -719,16 +818,25 @@
 
     // --- Clear / Reset ---
 
-    clearBtn.addEventListener('click', () => {
+    fileClearBtn.addEventListener('click', () => {
       pdfPages = null;
       fileInfo.hidden = true;
       dropZone.hidden = false;
       searchInput.disabled = true;
+      searchClearBtn.disabled = true;
       searchBtn.disabled = true;
       searchInput.value = '';
       fileInput.value = '';
       resultsSection.hidden = true;
       clearStatus();
+    });
+
+    // --- Search clear ---
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      resultsSection.hidden = true;
+      clearStatus();
+      searchInput.focus();
     });
 
     // --- Search ---
