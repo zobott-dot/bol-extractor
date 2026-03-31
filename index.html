@@ -301,6 +301,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 16px;
     }
 
     .results-header h2 {
@@ -313,44 +314,82 @@
       color: var(--text-muted);
     }
 
-    .results-summary {
-      background: var(--accent-soft);
-      border: 1px solid rgba(91, 138, 240, 0.15);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin: 16px 0;
-      line-height: 1.7;
+    .job-group {
+      margin-bottom: 1.25rem;
     }
 
-    .results-summary .mono {
+    .job-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .job-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.6rem 0.85rem;
+      background: var(--surface-raised);
+      border-radius: var(--radius) var(--radius) 0 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+    }
+
+    .job-group-number {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .job-group-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
       font-family: var(--mono);
     }
 
-    .results-list {
-      max-height: 500px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .job-group-variants {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      padding: 0.3rem 0.85rem;
+      background: var(--surface-raised);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
     }
 
-    .results-list::-webkit-scrollbar {
+    .job-group-results {
+      border: 1px solid var(--border);
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .job-group-results::-webkit-scrollbar {
       width: 6px;
     }
 
-    .results-list::-webkit-scrollbar-track {
+    .job-group-results::-webkit-scrollbar-track {
       background: transparent;
     }
 
-    .results-list::-webkit-scrollbar-thumb {
+    .job-group-results::-webkit-scrollbar-thumb {
       background: var(--border);
       border-radius: 3px;
     }
 
-    .results-list::-webkit-scrollbar-thumb:hover {
+    .job-group-results::-webkit-scrollbar-thumb:hover {
       background: var(--text-dim);
+    }
+
+    .job-group-no-results {
+      padding: 0.75rem 0.85rem;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-style: italic;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg);
     }
 
     .result-item {
@@ -395,17 +434,6 @@
       border-radius: 3px;
       font-weight: 500;
     }
-
-    .no-results {
-      text-align: center;
-      padding: 32px 16px;
-      color: var(--text-dim);
-      font-size: 14px;
-    }
-
-    .no-results .mono {
-      font-family: var(--mono);
-    }
   </style>
 </head>
 <body>
@@ -444,10 +472,10 @@
     <section class="card" id="search-section">
       <h2>Search</h2>
       <div class="search-row">
-        <input type="text" id="search-input" placeholder="Enter 6-digit job number" maxlength="10" disabled>
+        <input type="text" id="search-input" placeholder="Enter job numbers separated by commas (up to 10)" maxlength="80" disabled>
         <button id="search-btn" disabled>Search</button>
       </div>
-      <p class="hint">Enter the base job number (e.g., 159650). Suffix variants will be found automatically.</p>
+      <p class="hint">Enter 6-digit job numbers separated by commas (e.g., 159650, 159652, 159653).</p>
     </section>
 
     <div id="status-area"></div>
@@ -457,16 +485,16 @@
         <h2 id="results-title">Results</h2>
         <span class="match-count" id="match-count"></span>
       </div>
-      <div id="results-summary" class="results-summary"></div>
-      <div id="results-list" class="results-list"></div>
-      <div id="no-results" class="no-results" hidden></div>
+      <div id="results-body"></div>
     </section>
   </div>
 
   <script type="module">
+    // --- State ---
     let pdfPages = null;
     let pdfjsLib = null;
 
+    // --- DOM refs ---
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const progressArea = document.getElementById('progress-area');
@@ -482,9 +510,9 @@
     const resultsSection = document.getElementById('results-section');
     const resultsTitle = document.getElementById('results-title');
     const matchCountEl = document.getElementById('match-count');
-    const resultsSummary = document.getElementById('results-summary');
-    const resultsList = document.getElementById('results-list');
-    const noResults = document.getElementById('no-results');
+    const resultsBody = document.getElementById('results-body');
+
+    // --- Utilities ---
 
     async function initPdfJs() {
       if (pdfjsLib) return;
@@ -508,6 +536,55 @@
 
     function clearStatus() {
       statusArea.innerHTML = '';
+    }
+
+    // --- Line-aware PDF extraction ---
+
+    function buildLineText(items) {
+      let text = '';
+      for (let i = 0; i < items.length; i++) {
+        if (i > 0) {
+          const prevEnd = items[i - 1].transform[4] + (items[i - 1].width || 0);
+          const gap = items[i].transform[4] - prevEnd;
+          text += gap > 10 ? '  ' : ' ';
+        }
+        text += items[i].str;
+      }
+      return text;
+    }
+
+    async function extractPageLines(page) {
+      const content = await page.getTextContent();
+      const items = content.items.filter(item => item.str.trim().length > 0);
+      if (items.length === 0) return [];
+
+      const Y_TOLERANCE = 3;
+
+      // Sort by y descending (top to bottom on page)
+      const sorted = [...items].sort((a, b) => b.transform[5] - a.transform[5]);
+
+      const lineGroups = [];
+      let currentLine = [sorted[0]];
+      let currentY = sorted[0].transform[5];
+
+      for (let i = 1; i < sorted.length; i++) {
+        const item = sorted[i];
+        const y = item.transform[5];
+        if (Math.abs(y - currentY) <= Y_TOLERANCE) {
+          currentLine.push(item);
+        } else {
+          lineGroups.push(currentLine);
+          currentLine = [item];
+          currentY = y;
+        }
+      }
+      lineGroups.push(currentLine);
+
+      // Sort each line left-to-right by x, then build text
+      return lineGroups.map(group => {
+        group.sort((a, b) => a.transform[4] - b.transform[4]);
+        return buildLineText(group);
+      });
     }
 
     // --- File handling ---
@@ -562,9 +639,8 @@
 
         for (let i = 1; i <= totalPages; i++) {
           const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const text = textContent.items.map(item => item.str).join(' ');
-          pages.push({ pageNum: i, text });
+          const lines = await extractPageLines(page);
+          pages.push({ pageNum: i, lines });
 
           const pct = Math.round((i / totalPages) * 100);
           progressFill.style.width = pct + '%';
@@ -622,102 +698,175 @@
 
       if (!pdfPages) return;
 
-      const raw = searchInput.value.trim();
-      const baseMatch = raw.match(/^(\d{6})/);
-      if (!baseMatch) {
-        showStatus('Enter a valid 6-digit job number.', 'warn');
+      // Parse comma/space-separated job numbers
+      const jobNumbers = searchInput.value.trim()
+        .split(/[,\s]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(s => { const m = s.match(/^(\d{6})/); return m ? m[1] : null; })
+        .filter(Boolean);
+
+      const uniqueJobs = [...new Set(jobNumbers)];
+
+      if (uniqueJobs.length === 0) {
+        showStatus('Enter at least one valid 6-digit job number.', 'warn');
+        return;
+      }
+      if (uniqueJobs.length > 10) {
+        showStatus('Maximum 10 job numbers at a time.', 'warn');
         return;
       }
 
-      const baseJob = baseMatch[1];
+      // Search for each job
+      const allResults = [];
+      let totalMatches = 0;
+
+      for (const baseJob of uniqueJobs) {
+        const pattern = new RegExp(
+          '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)',
+          'gi'
+        );
+
+        let matchCount = 0;
+        const variants = new Set();
+        const pagesWithMatches = new Set();
+        const lineHits = new Map(); // "pageNum:lineIdx" -> { pageNum, lineText }
+
+        for (const { pageNum, lines } of pdfPages) {
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            pattern.lastIndex = 0;
+            let m;
+            while ((m = pattern.exec(line)) !== null) {
+              matchCount++;
+              variants.add(m[1].toUpperCase());
+              pagesWithMatches.add(pageNum);
+              const key = pageNum + ':' + li;
+              if (!lineHits.has(key)) {
+                lineHits.set(key, { pageNum, lineText: line });
+              }
+            }
+          }
+        }
+
+        totalMatches += matchCount;
+        allResults.push({
+          baseJob,
+          matchCount,
+          lineHits: [...lineHits.values()],
+          variants: [...variants].sort(),
+          pages: [...pagesWithMatches].sort((a, b) => a - b),
+        });
+      }
+
+      renderResults(allResults, totalMatches);
+    }
+
+    // --- Search display helpers ---
+
+    function truncateLine(line, baseJob) {
+      if (line.length <= 200) return { text: line, pre: false, post: false };
+
+      const idx = line.search(new RegExp(baseJob, 'i'));
+      if (idx === -1) {
+        return { text: line.substring(0, 200), pre: false, post: true };
+      }
+
+      let start = Math.max(0, idx - 100);
+      let end = start + 200;
+      if (end > line.length) {
+        end = line.length;
+        start = Math.max(0, end - 200);
+      }
+
+      return {
+        text: line.substring(start, end),
+        pre: start > 0,
+        post: end < line.length,
+      };
+    }
+
+    function highlightInLine(text, baseJob) {
       const pattern = new RegExp(
         '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)',
         'gi'
       );
 
-      const matches = [];
-      const variants = new Set();
-      const pagesWithMatches = new Set();
-
-      for (const { pageNum, text } of pdfPages) {
-        pattern.lastIndex = 0;
-        let m;
-        while ((m = pattern.exec(text)) !== null) {
-          const jobRef = m[1];
-          variants.add(jobRef.toUpperCase());
-          pagesWithMatches.add(pageNum);
-
-          const refStart = m.index + m[0].length - m[1].length;
-          const refEnd = m.index + m[0].length;
-          const ctxStart = Math.max(0, refStart - 40);
-          const ctxEnd = Math.min(text.length, refEnd + 40);
-
-          matches.push({
-            pageNum,
-            jobRef,
-            before: text.substring(ctxStart, refStart),
-            after: text.substring(refEnd, ctxEnd),
-            trimmedLeft: ctxStart > 0,
-            trimmedRight: ctxEnd < text.length
-          });
-        }
+      const spans = [];
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        const refStart = m.index + m[0].length - m[1].length;
+        const refEnd = m.index + m[0].length;
+        spans.push({ start: refStart, end: refEnd });
       }
 
-      renderResults(baseJob, matches, variants, pagesWithMatches);
+      if (spans.length === 0) return escapeHtml(text);
+
+      let html = '';
+      let pos = 0;
+      for (const s of spans) {
+        html += escapeHtml(text.substring(pos, s.start));
+        html += '<mark>' + escapeHtml(text.substring(s.start, s.end)) + '</mark>';
+        pos = s.end;
+      }
+      html += escapeHtml(text.substring(pos));
+      return html;
     }
 
-    function renderResults(baseJob, matches, variants, pagesWithMatches) {
+    // --- Render results ---
+
+    function renderResults(allResults, totalMatches) {
       resultsSection.hidden = false;
-      resultsTitle.innerHTML =
-        'Results for <span style="font-family:var(--mono)">' + escapeHtml(baseJob) + '</span>';
+      resultsTitle.textContent = 'Results';
+      matchCountEl.textContent =
+        totalMatches + ' match' + (totalMatches !== 1 ? 'es' : '') +
+        ' across ' + allResults.length + ' job' + (allResults.length !== 1 ? 's' : '');
 
-      if (matches.length === 0) {
-        matchCountEl.textContent = '';
-        resultsSummary.hidden = true;
-        resultsList.hidden = true;
-        noResults.hidden = false;
-        noResults.innerHTML =
-          'No occurrences of <span class="mono">' + escapeHtml(baseJob) +
-          '</span> found in this document.';
-        return;
+      let html = '';
+
+      for (const { baseJob, matchCount, lineHits, variants, pages } of allResults) {
+        html += '<div class="job-group">';
+
+        // Header
+        html += '<div class="job-group-header">';
+        html += '<span class="job-group-number">' + escapeHtml(baseJob) + '</span>';
+        if (matchCount > 0) {
+          html += '<span class="job-group-meta">' +
+            matchCount + ' match' + (matchCount !== 1 ? 'es' : '') +
+            ' on page' + (pages.length !== 1 ? 's' : '') + ' ' + pages.join(', ') +
+            '</span>';
+        } else {
+          html += '<span class="job-group-meta">no matches</span>';
+        }
+        html += '</div>';
+
+        // Variants (only if more than one)
+        if (variants.length > 1) {
+          html += '<div class="job-group-variants">Variants: ' +
+            variants.map(v => escapeHtml(v)).join(', ') + '</div>';
+        }
+
+        // Match lines or no-results
+        if (matchCount > 0) {
+          html += '<div class="job-group-results">';
+          for (const hit of lineHits) {
+            const { text, pre, post } = truncateLine(hit.lineText, baseJob);
+            const highlighted = highlightInLine(text, baseJob);
+            html += '<div class="result-item">' +
+              '<span class="page-badge">p.' + hit.pageNum + '</span>' +
+              '<span class="result-context">' +
+              (pre ? '\u2026' : '') + highlighted + (post ? '\u2026' : '') +
+              '</span></div>';
+          }
+          html += '</div>';
+        } else {
+          html += '<div class="job-group-no-results">No occurrences found in this document.</div>';
+        }
+
+        html += '</div>';
       }
 
-      matchCountEl.textContent = matches.length + ' match' + (matches.length !== 1 ? 'es' : '');
-
-      const sortedPages = [...pagesWithMatches].sort((a, b) => a - b);
-      const variantList = [...variants].sort();
-      let summary =
-        'Found <strong>' + matches.length + '</strong> occurrence' +
-        (matches.length !== 1 ? 's' : '') +
-        ' across <strong>' + sortedPages.length + '</strong> page' +
-        (sortedPages.length !== 1 ? 's' : '') +
-        ' (<span class="mono">' + sortedPages.join(', ') + '</span>).';
-      if (variantList.length > 1) {
-        summary +=
-          '<br>Variants found: <span class="mono">' +
-          variantList.map(v => escapeHtml(v)).join(', ') + '</span>';
-      }
-      resultsSummary.innerHTML = summary;
-      resultsSummary.hidden = false;
-      resultsList.hidden = false;
-      noResults.hidden = true;
-
-      resultsList.innerHTML = matches
-        .map((m) => {
-          const prefix = m.trimmedLeft ? '\u2026' : '';
-          const suffix = m.trimmedRight ? '\u2026' : '';
-          return (
-            '<div class="result-item">' +
-            '<span class="page-badge">p.' + m.pageNum + '</span>' +
-            '<span class="result-context">' +
-            escapeHtml(prefix + m.before) +
-            '<mark>' + escapeHtml(m.jobRef) + '</mark>' +
-            escapeHtml(m.after + suffix) +
-            '</span></div>'
-          );
-        })
-        .join('');
-
+      resultsBody.innerHTML = html;
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   </script>
