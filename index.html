@@ -1254,14 +1254,31 @@
     searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
 
     function parseJobInput() {
-      const jobNumbers = searchInput.value.trim()
-        .split(/[,\s]+/).map(s => s.trim()).filter(s => s.length > 0)
-        .map(s => { const m = s.match(/^(\d{6})/); return m ? m[1] : null; })
-        .filter(Boolean);
-      const uniqueJobs = [...new Set(jobNumbers)];
-      if (uniqueJobs.length === 0) { showStatus('Enter at least one valid 6-digit job number.', 'warn'); return null; }
-      if (uniqueJobs.length > 10) { showStatus('Maximum 10 job numbers at a time.', 'warn'); return null; }
-      return uniqueJobs;
+      const rawEntries = searchInput.value.trim()
+        .split(/[,\s]+/).map(s => s.trim()).filter(s => s.length > 0);
+      const valid = [];
+      const invalid = [];
+      const seen = new Set();
+
+      for (const entry of rawEntries) {
+        const m = entry.match(/^(\d{6})/);
+        if (m) {
+          if (!seen.has(m[1])) { seen.add(m[1]); valid.push(m[1]); }
+        } else if (/[a-zA-Z]/.test(entry)) {
+          invalid.push({ entry, reason: 'Contains non-numeric characters \u2014 enter the 6-digit job number only' });
+        } else {
+          const digits = entry.replace(/\D/g, '');
+          if (digits.length < 6) {
+            invalid.push({ entry, reason: 'Only ' + digits.length + ' digit' + (digits.length !== 1 ? 's' : '') + ' \u2014 job numbers are 6 digits' });
+          } else {
+            invalid.push({ entry, reason: digits.length + ' digits \u2014 job numbers are 6 digits' });
+          }
+        }
+      }
+
+      if (valid.length === 0 && invalid.length === 0) { showStatus('Enter at least one valid 6-digit job number.', 'warn'); return null; }
+      if (valid.length > 10) { showStatus('Maximum 10 valid job numbers at a time.', 'warn'); return null; }
+      return { valid, invalid };
     }
 
     function scanJobRaw(baseJob) {
@@ -1307,8 +1324,15 @@
       clarificationState = {};
       currentResults = null;
 
-      const uniqueJobs = parseJobInput();
-      if (!uniqueJobs) return;
+      const parsed = parseJobInput();
+      if (!parsed) return;
+      const { valid: uniqueJobs, invalid: invalidEntries } = parsed;
+
+      // If only invalid entries and no valid jobs, render just the skipped cards
+      if (uniqueJobs.length === 0) {
+        renderPhase2Results([], invalidEntries);
+        return;
+      }
 
       if (useFallback) {
         // Phase 1 fallback
@@ -1319,7 +1343,7 @@
           totalMatches += raw.matchCount;
           allResults.push({ baseJob, ...raw });
         }
-        renderFallbackResults(allResults, totalMatches);
+        renderFallbackResults(allResults, totalMatches, invalidEntries);
         return;
       }
 
@@ -1331,7 +1355,7 @@
         allResults.push({ ...dedup, raw });
       }
       currentResults = allResults;
-      renderPhase2Results(allResults);
+      renderPhase2Results(allResults, invalidEntries);
     }
 
     // --- Display helpers ---
@@ -1566,7 +1590,8 @@
 
     // --- Render: Phase 2 ---
 
-    function renderPhase2Results(allResults) {
+    function renderPhase2Results(allResults, invalidEntries) {
+      invalidEntries = invalidEntries || [];
       resultsSection.hidden = false;
       resultsTitle.textContent = 'Results';
 
@@ -1697,13 +1722,23 @@
         html += '</div>'; // job-group
       }
 
+      // Invalid entry cards (after all valid results)
+      for (const inv of invalidEntries) {
+        html += '<div class="job-group job-group-not-found">' +
+          '<div class="job-group-header collapsed">' +
+          '<span class="job-group-number">' + escapeHtml(inv.entry) + '</span>' +
+          '<span class="not-found-badge">Skipped</span>' +
+          '<span class="job-group-meta">' + escapeHtml(inv.reason) + '</span></div></div>';
+      }
+
       resultsBody.innerHTML = html;
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // --- Render: Phase 1 fallback ---
 
-    function renderFallbackResults(allResults, totalMatches) {
+    function renderFallbackResults(allResults, totalMatches, invalidEntries) {
+      invalidEntries = invalidEntries || [];
       resultsSection.hidden = false;
       resultsTitle.textContent = 'Results';
       matchCountEl.textContent =
@@ -1763,6 +1798,15 @@
         }
 
         html += '</div>';
+      }
+
+      // Invalid entry cards
+      for (const inv of invalidEntries) {
+        html += '<div class="job-group job-group-not-found">' +
+          '<div class="job-group-header collapsed">' +
+          '<span class="job-group-number">' + escapeHtml(inv.entry) + '</span>' +
+          '<span class="not-found-badge">Skipped</span>' +
+          '<span class="job-group-meta">' + escapeHtml(inv.reason) + '</span></div></div>';
       }
 
       resultsBody.innerHTML = html;
