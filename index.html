@@ -372,6 +372,141 @@
       color: var(--warn); padding: 0.65rem 1rem; border-radius: var(--radius);
       font-size: 0.8rem; margin-bottom: 1rem;
     }
+
+    /* Phase 3: Confidence & Clarification */
+    .job-group-flagged > .job-group-header {
+      border-left: 3px solid var(--warn);
+    }
+
+    .clarification-wrapper {
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .clarification-wrapper.clarification-bottom {
+      border-bottom: 1px solid var(--border);
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .clarification-area {
+      padding: 0.75rem 0.85rem;
+      background: var(--warn-soft);
+      border-left: 2px solid var(--warn);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--text);
+      transition: opacity 0.25s ease;
+    }
+    .clarification-area + .clarification-area {
+      border-top: 1px solid rgba(240,164,91,0.15);
+    }
+
+    .clarification-title {
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.35rem;
+      font-size: 0.82rem;
+    }
+
+    .clarification-desc {
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+    }
+
+    .clarification-current {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.6rem;
+    }
+
+    .clarification-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .clarification-btn {
+      font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+      padding: 0.38rem 0.85rem; border-radius: var(--radius); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .clarification-btn:hover {
+      border-color: var(--accent); background: var(--accent-soft);
+    }
+    .clarification-btn-primary {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+    .clarification-btn-primary:hover {
+      background: var(--accent-hover); border-color: var(--accent-hover);
+    }
+
+    .clarification-resolved {
+      padding: 0.65rem 0.85rem;
+      background: var(--success-soft);
+      border-left: 2px solid var(--success);
+      font-size: 0.78rem;
+      color: var(--success);
+      font-family: var(--mono);
+      transition: opacity 0.25s ease;
+    }
+
+    /* Zero result */
+    .job-group-not-found > .job-group-header {
+      opacity: 0.55;
+    }
+
+    .not-found-badge {
+      font-family: var(--mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.12rem 0.4rem; border-radius: 3px;
+      color: var(--text-dim); background: var(--surface-raised);
+      border: 1px solid var(--border);
+    }
+
+    .zero-result-body {
+      padding: 0.85rem;
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg); font-size: 0.82rem;
+      color: var(--text-muted); line-height: 1.55;
+    }
+    .zero-result-body p + p { margin-top: 0.4rem; }
+
+    .suggestion-link {
+      color: var(--accent); cursor: pointer; text-decoration: underline;
+      font-family: var(--mono); font-size: 0.82rem;
+    }
+    .suggestion-link:hover { color: var(--accent-hover); }
+
+    /* Number update animation */
+    @keyframes number-flash {
+      0%, 20% { background: var(--warn-soft); border-radius: 3px; }
+      100% { background: transparent; }
+    }
+    .number-updated { animation: number-flash 0.8s ease; }
+
+    /* Variant breakdown in detail panel */
+    .variant-summary {
+      padding: 0.5rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--text-muted); font-family: var(--mono);
+      line-height: 1.6;
+    }
+    .variant-summary-title {
+      font-weight: 600; color: var(--text-dim); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem;
+    }
+    .variant-row {
+      display: flex; align-items: baseline; gap: 0.5rem; padding: 0.1rem 0;
+    }
+    .variant-row::before { content: '\251C'; color: var(--border); flex-shrink: 0; }
+    .variant-row:last-child::before { content: '\2514'; }
+    .variant-name { color: var(--text); font-weight: 500; }
+    .variant-detail { color: var(--text-dim); }
+    .variant-total { color: var(--accent); margin-left: auto; }
   </style>
 </head>
 <body>
@@ -381,7 +516,7 @@
         <div>
           <div class="header-title">
             <h1>BOL Extractor</h1>
-            <span class="badge">Phase 2</span>
+            <span class="badge">Phase 3</span>
           </div>
           <p class="subtitle">Search daily BOL reports for job numbers with document-aware deduplication.</p>
         </div>
@@ -443,6 +578,9 @@
     let pdfjsLib = null;
     let documentSections = null;
     let useFallback = false;
+    let clarificationState = {};
+    let currentResults = null;
+    let allJobNumbersCache = null;
 
     // --- DOM refs ---
     const dropZone = document.getElementById('drop-zone');
@@ -493,9 +631,13 @@
     function clearStatus() { statusArea.innerHTML = ''; }
 
     function extractCommaNumbers(lineText) {
-      const matches = lineText.match(/\b\d{1,3}(,\d{3})+\b/g);
+      const matches = lineText.match(/\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b/g);
       if (!matches) return [];
-      return matches.map(s => ({ raw: s, value: parseInt(s.replace(/,/g, ''), 10) }));
+      return matches.map(s => {
+        const value = parseInt(s.replace(/,/g, ''), 10);
+        const isNegative = lineText.indexOf(s) > 0 && lineText[lineText.indexOf(s) - 1] === '-';
+        return { raw: s, value, negative: isNegative };
+      });
     }
 
     function sectionTypeLabel(type) {
@@ -506,6 +648,58 @@
     function sourceBadgeClass(type) {
       const map = { manifest: 'source-badge-manifest', sg360_bol: 'source-badge-sg360', uniform_bol: 'source-badge-uniform' };
       return 'source-badge ' + (map[type] || '');
+    }
+
+    // --- Phase 3: Utility functions ---
+
+    function editDistance(a, b) {
+      const m = a.length, n = b.length;
+      const dp = [];
+      for (let i = 0; i <= m; i++) {
+        dp[i] = [i];
+        for (let j = 1; j <= n; j++) dp[i][j] = i === 0 ? j : 0;
+      }
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          dp[i][j] = a[i - 1] === b[j - 1]
+            ? dp[i - 1][j - 1]
+            : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        }
+      }
+      return dp[m][n];
+    }
+
+    function findSimilarJobs(searched, allJobs) {
+      const results = [];
+      for (const job of allJobs) {
+        if (job === searched) continue;
+        const dist = editDistance(searched, job);
+        if (dist <= 2) {
+          results.push({ job, distance: dist });
+          continue;
+        }
+        if (searched.length === 6 && job.length === 6) {
+          let shared = 0;
+          for (let i = 0; i < 6; i++) { if (searched[i] === job[i]) shared++; }
+          if (shared >= 5) results.push({ job, distance: dist });
+        }
+      }
+      results.sort((a, b) => a.distance - b.distance);
+      return results;
+    }
+
+    function collectAllJobNumbers() {
+      if (allJobNumbersCache) return allJobNumbersCache;
+      const jobs = new Set();
+      for (const { lines } of pdfPages) {
+        for (const line of lines) {
+          const pattern = /(?:^|[\s,;|/\-#:])(\d{6})(?=[A-Za-z\s,;|/\-#:)]|$)/g;
+          let m;
+          while ((m = pattern.exec(line)) !== null) jobs.add(m[1]);
+        }
+      }
+      allJobNumbersCache = [...jobs].sort();
+      return allJobNumbersCache;
     }
 
     // --- Line-aware PDF extraction ---
@@ -602,12 +796,12 @@
       for (const section of sections) {
         for (const line of section.lines) {
           if (!section.metadata.tripNumber) {
-            const m = line.text.match(/(VMI_T_\d{7})/i);
-            if (m) section.metadata.tripNumber = m[1].toUpperCase();
+            const m = line.text.match(/(VMI_T_[\dO]{7})/i);
+            if (m) section.metadata.tripNumber = m[1].toUpperCase().replace(/O/g, '0');
           }
           if (!section.metadata.manifestNumber) {
-            const m = line.text.match(/(VMI_M_\d{7})/i);
-            if (m) section.metadata.manifestNumber = m[1].toUpperCase();
+            const m = line.text.match(/(VMI_M_[\dO]{7})/i);
+            if (m) section.metadata.manifestNumber = m[1].toUpperCase().replace(/O/g, '0');
           }
           if (!section.metadata.loadNumber) {
             const m = line.text.match(/Load\s*#?\s*(\d+)/i);
@@ -626,6 +820,7 @@
         '(?:^|[\\s,;|/\\-#:])(' + baseJob + '[A-Za-z0-9\\-]*)', 'gi'
       );
       let trackingMyJob = false;
+      let pendingJobNumberLine = false;
       let total = null;
       let totalPage = null;
       let totalSource = null;
@@ -634,6 +829,22 @@
 
       for (const line of section.lines) {
         const text = line.text;
+
+        // Handle split-line "Job Number Total" (second part: "Total NNN")
+        if (pendingJobNumberLine && trackingMyJob) {
+          pendingJobNumberLine = false;
+          if (/total/i.test(text)) {
+            const qty = extractCommaNumbers(text);
+            if (qty.length > 0) {
+              total = qty[0].value;
+              totalPage = line.pageNum;
+              totalSource = 'Job Number Total';
+              totalLineText = text;
+              trackingMyJob = false;
+              continue;
+            }
+          }
+        }
 
         // Check if this line has our searched job
         pattern.lastIndex = 0;
@@ -656,8 +867,8 @@
           }
         }
 
-        // Check for "Job Number Total"
-        if (/job\s*number\s*total/i.test(text) && trackingMyJob) {
+        // Check for "Job Number Total" (flexible whitespace for OCR)
+        if (/job\s+number\s+total/i.test(text) && trackingMyJob) {
           const qty = extractCommaNumbers(text);
           if (qty.length > 0) {
             total = qty[0].value;
@@ -674,6 +885,9 @@
             }
           }
           trackingMyJob = false;
+        } else if (/job\s+number\s*$/i.test(text) && trackingMyJob) {
+          // Possible split-line: "Job Number" on this line, "Total NNN" on next
+          pendingJobNumberLine = true;
         }
       }
 
@@ -815,6 +1029,67 @@
       return { jobNumber: baseJob, deduplicatedTotal, trips };
     }
 
+    // --- Phase 3: Confidence scoring ---
+
+    function assessConfidence(result) {
+      const { jobNumber, deduplicatedTotal, trips } = result;
+      if (trips.length === 0) return { level: 'high', reasons: [], clarifications: [] };
+
+      const clarifications = [];
+
+      for (let ti = 0; ti < trips.length; ti++) {
+        const trip = trips[ti];
+
+        // Source mismatch: winner vs excluded sources differ significantly
+        for (const exc of trip.excluded) {
+          if (exc.total === 0) continue;
+          const diff = Math.abs(trip.total - exc.total);
+          const threshold = Math.max(Math.max(trip.total, exc.total) * 0.01, 100);
+          if (diff > threshold) {
+            clarifications.push({
+              type: 'source_mismatch',
+              tripNumber: trip.tripNumber,
+              currentSource: trip.source,
+              currentTotal: trip.total,
+              alternativeSource: exc.sectionType,
+              alternativeTotal: exc.total,
+              tripIndex: ti,
+            });
+          }
+        }
+
+        // No authoritative source: only Uniform BOL pallet entries
+        if (trip.source === 'uniform_bol' && trip.included.entries.length > 0) {
+          const entries = trip.included.entries;
+          clarifications.push({
+            type: 'no_authoritative',
+            tripNumber: trip.tripNumber,
+            total: trip.total,
+            entryCount: entries.length,
+            startPage: entries[0].page,
+            endPage: entries[entries.length - 1].page,
+            tripIndex: ti,
+          });
+        }
+      }
+
+      const level = clarifications.length > 0 ? 'flagged' : 'high';
+      const reasons = [...new Set(clarifications.map(c => c.type))];
+      return { level, reasons, clarifications };
+    }
+
+    function getClarifiedTotal(result) {
+      let total = result.deduplicatedTotal;
+      if (!result.confidence) return total;
+      for (let ci = 0; ci < result.confidence.clarifications.length; ci++) {
+        const clarId = result.jobNumber + '_' + ci;
+        const state = clarificationState[clarId];
+        if (!state || !state.resolved || !state.delta) continue;
+        total += state.delta;
+      }
+      return Math.max(0, total);
+    }
+
     // --- File handling ---
 
     dropZone.addEventListener('click', () => fileInput.click());
@@ -909,6 +1184,9 @@
       pdfPages = null;
       documentSections = null;
       useFallback = false;
+      clarificationState = {};
+      currentResults = null;
+      allJobNumbersCache = null;
       fileInfo.hidden = true;
       sectionMetaEl.hidden = true;
       dropZone.hidden = false;
@@ -923,23 +1201,50 @@
 
     searchClearBtn.addEventListener('click', () => {
       searchInput.value = '';
+      clarificationState = {};
+      currentResults = null;
       resultsSection.hidden = true;
       clearStatus();
       searchInput.focus();
     });
 
-    // --- Event delegation for expand/collapse ---
+    // --- Event delegation ---
 
     resultsBody.addEventListener('click', (e) => {
+      // Phase 3: Clarification buttons
+      const clarBtn = e.target.closest('.clarification-btn');
+      if (clarBtn) {
+        handleClarificationChoice(clarBtn);
+        return;
+      }
+
+      // Phase 3: Suggestion links (zero-result)
+      const sugLink = e.target.closest('.suggestion-link');
+      if (sugLink) {
+        const job = sugLink.dataset.job;
+        if (job) { searchInput.value = job; performSearch(); }
+        return;
+      }
+
+      // Expand/collapse
       const btn = e.target.closest('.expand-btn');
       if (!btn) return;
       const group = btn.closest('.job-group');
       const header = group.querySelector('.job-group-header');
       const detail = group.querySelector('.job-detail');
       if (!detail) return;
+
       const wasHidden = detail.hidden;
       detail.hidden = !wasHidden;
-      header.classList.toggle('collapsed', !wasHidden);
+
+      // Phase 3: Handle clarification wrapper border when toggling detail
+      const clarWrapper = group.querySelector('.clarification-wrapper');
+      if (clarWrapper) {
+        clarWrapper.classList.toggle('clarification-bottom', !wasHidden);
+      } else {
+        header.classList.toggle('collapsed', !wasHidden);
+      }
+
       btn.textContent = wasHidden ? 'Hide' : 'Details';
     });
 
@@ -998,6 +1303,10 @@
       resultsSection.hidden = true;
       if (!pdfPages) return;
 
+      // Phase 3: Reset clarification state for each new search
+      clarificationState = {};
+      currentResults = null;
+
       const uniqueJobs = parseJobInput();
       if (!uniqueJobs) return;
 
@@ -1014,13 +1323,14 @@
         return;
       }
 
-      // Phase 2: deduplicated search
+      // Phase 2+3: deduplicated search with confidence scoring
       const allResults = [];
       for (const baseJob of uniqueJobs) {
         const dedup = deduplicateJob(baseJob, documentSections);
         const raw = scanJobRaw(baseJob);
         allResults.push({ ...dedup, raw });
       }
+      currentResults = allResults;
       renderPhase2Results(allResults);
     }
 
@@ -1093,54 +1403,259 @@
         (trailingHtml || '') + '</div>';
     }
 
+    // --- Phase 3: Render helpers ---
+
+    function renderClarificationArea(clar, jobNumber, clarId) {
+      let html = '<div class="clarification-area" data-clar-id="' + escapeHtml(clarId) + '">';
+
+      if (clar.type === 'source_mismatch') {
+        const tripLabel = clar.tripNumber ? 'Trip ' + clar.tripNumber : 'Unknown trip';
+        const curLabel = sectionTypeLabel(clar.currentSource);
+        const altLabel = sectionTypeLabel(clar.alternativeSource);
+        html += '<div class="clarification-title">\u26A0 Quantity mismatch for job ' + escapeHtml(jobNumber) + '</div>';
+        html += '<div class="clarification-desc">The ' + curLabel + ' total (' + tripLabel +
+          ') shows ' + clar.currentTotal.toLocaleString() + ' pieces, but the ' + altLabel +
+          ' summary shows ' + clar.alternativeTotal.toLocaleString() + ' pieces.</div>';
+        html += '<div class="clarification-current">Currently using: ' + curLabel +
+          ' total (' + clar.currentTotal.toLocaleString() + ')</div>';
+        html += '<div class="clarification-actions">' +
+          '<button class="clarification-btn clarification-btn-primary" ' +
+          'data-clar-id="' + escapeHtml(clarId) + '" data-choice="keep" data-job="' + escapeHtml(jobNumber) + '" ' +
+          'data-current-total="' + clar.currentTotal + '" data-source-label="' + curLabel + '">' +
+          'Keep ' + curLabel + ' Total</button>' +
+          '<button class="clarification-btn" ' +
+          'data-clar-id="' + escapeHtml(clarId) + '" data-choice="alternative" data-job="' + escapeHtml(jobNumber) + '" ' +
+          'data-new-total="' + clar.alternativeTotal + '" data-current-total="' + clar.currentTotal + '" ' +
+          'data-source-label="' + altLabel + '">' +
+          'Use ' + altLabel + ' Total</button></div>';
+
+      } else if (clar.type === 'no_authoritative') {
+        const pageRange = clar.startPage === clar.endPage
+          ? 'page ' + clar.startPage
+          : 'pages ' + clar.startPage + '\u2013' + clar.endPage;
+        html += '<div class="clarification-title">\u26A0 No Manifest or SG360 BOL total found for job ' +
+          escapeHtml(jobNumber) + '</div>';
+        html += '<div class="clarification-desc">The total (' + clar.total.toLocaleString() +
+          ') is based on summing ' + clar.entryCount + ' individual pallet entries from the Uniform BOL on ' +
+          pageRange + '. This is less reliable than a Manifest or SG360 BOL total.</div>';
+        html += '<div class="clarification-actions">' +
+          '<button class="clarification-btn clarification-btn-primary" ' +
+          'data-clar-id="' + escapeHtml(clarId) + '" data-choice="acknowledge" data-job="' + escapeHtml(jobNumber) + '" ' +
+          'data-current-total="' + clar.total + '" data-source-label="Uniform BOL">' +
+          'OK, Use Pallet Sum</button></div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function renderVariantBreakdown(result) {
+      const variants = {};
+      for (const trip of result.trips) {
+        for (const entry of trip.included.entries) {
+          const v = (entry.variant || result.jobNumber).toUpperCase();
+          if (!variants[v]) variants[v] = { total: 0, trips: new Set() };
+          variants[v].total += entry.quantity;
+          variants[v].trips.add(trip.tripNumber || 'Unknown');
+        }
+      }
+      const keys = Object.keys(variants).sort();
+      if (keys.length <= 1) return '';
+
+      let html = '<div class="variant-summary">';
+      html += '<div class="variant-summary-title">Variant Breakdown</div>';
+      for (const v of keys) {
+        const d = variants[v];
+        const tc = d.trips.size;
+        html += '<div class="variant-row">' +
+          '<span class="variant-name">' + escapeHtml(v) + '</span>' +
+          '<span class="variant-detail">' + tc + ' trip' + (tc !== 1 ? 's' : '') + '</span>' +
+          '<span class="variant-total">' + d.total.toLocaleString() + '</span></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderZeroResultBody(jobNumber) {
+      const allJobs = collectAllJobNumbers();
+      const similar = findSimilarJobs(jobNumber, allJobs);
+
+      let html = '<div class="zero-result-body">';
+      html += '<p>Job ' + escapeHtml(jobNumber) + ' was not found in this BOL report.</p>';
+      html += '<p>This report contains ' + allJobs.length + ' unique job numbers.</p>';
+
+      if (similar.length > 0) {
+        html += '<p>Similar numbers found: ' +
+          similar.slice(0, 5).map(function(s) {
+            return '<span class="suggestion-link" data-job="' + escapeHtml(s.job) + '">' + escapeHtml(s.job) + '</span>';
+          }).join(', ') + '</p>';
+      } else {
+        html += '<p>No similar job numbers were found.</p>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function handleClarificationChoice(btn) {
+      const clarId = btn.dataset.clarId;
+      const choice = btn.dataset.choice;
+      const jobNumber = btn.dataset.job;
+      const area = document.querySelector('[data-clar-id="' + clarId + '"]');
+      if (!area) return;
+
+      let delta = 0;
+      let message = '';
+
+      if (choice === 'keep') {
+        const total = parseInt(btn.dataset.currentTotal, 10);
+        message = 'Got it \u2014 using ' + btn.dataset.sourceLabel + ' total of ' + total.toLocaleString() + '.';
+      } else if (choice === 'alternative') {
+        const newTotal = parseInt(btn.dataset.newTotal, 10);
+        const curTotal = parseInt(btn.dataset.currentTotal, 10);
+        delta = newTotal - curTotal;
+        message = 'Updated \u2014 now using ' + btn.dataset.sourceLabel + ' total of ' +
+          newTotal.toLocaleString() + '. Previous: ' + curTotal.toLocaleString() + '.';
+      } else if (choice === 'acknowledge') {
+        const total = parseInt(btn.dataset.currentTotal, 10);
+        message = 'Acknowledged \u2014 using pallet entry sum of ' + total.toLocaleString() + '.';
+      }
+
+      clarificationState[clarId] = { resolved: true, choice, delta };
+
+      // Animate transition
+      area.style.opacity = '0';
+      setTimeout(function() {
+        area.textContent = message;
+        area.classList.remove('clarification-area');
+        area.classList.add('clarification-resolved');
+        area.style.opacity = '';
+
+        if (delta !== 0) updateDisplayTotals(jobNumber);
+      }, 250);
+    }
+
+    function updateDisplayTotals(jobNumber) {
+      if (!currentResults) return;
+      const result = currentResults.find(function(r) { return r.jobNumber === jobNumber; });
+      if (!result) return;
+
+      const newTotal = getClarifiedTotal(result);
+
+      // Update job total with highlight
+      const jobEl = document.getElementById('job-total-' + jobNumber);
+      if (jobEl) {
+        jobEl.textContent = newTotal.toLocaleString() + ' pcs';
+        jobEl.classList.remove('number-updated');
+        void jobEl.offsetWidth; // force reflow for re-trigger
+        jobEl.classList.add('number-updated');
+      }
+
+      // Update grand total with highlight
+      if (currentResults.length >= 2) {
+        const grandEl = document.getElementById('grand-total-value');
+        if (grandEl) {
+          const grand = currentResults.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
+          grandEl.textContent = grand.toLocaleString() + ' pcs';
+          grandEl.classList.remove('number-updated');
+          void grandEl.offsetWidth;
+          grandEl.classList.add('number-updated');
+        }
+      }
+    }
+
     // --- Render: Phase 2 ---
 
     function renderPhase2Results(allResults) {
       resultsSection.hidden = false;
       resultsTitle.textContent = 'Results';
 
+      // Phase 3: Assess confidence for each result
+      for (const result of allResults) {
+        result.confidence = assessConfidence(result);
+      }
+
       const jobsWithData = allResults.filter(r => r.deduplicatedTotal > 0);
-      matchCountEl.textContent = allResults.length + ' job' + (allResults.length !== 1 ? 's' : '') +
-        (jobsWithData.length > 0 ? ' \u00b7 deduplicated' : '');
+      const flaggedCount = allResults.filter(r => r.confidence.level === 'flagged').length;
+      let statusParts = allResults.length + ' job' + (allResults.length !== 1 ? 's' : '');
+      if (jobsWithData.length > 0) statusParts += ' \u00b7 deduplicated';
+      if (flaggedCount > 0) statusParts += ' \u00b7 ' + flaggedCount + ' flagged';
+      matchCountEl.textContent = statusParts;
 
       let html = '';
 
       // Grand total for 2+ jobs
       if (allResults.length >= 2) {
-        const grandTotal = allResults.reduce((s, r) => s + r.deduplicatedTotal, 0);
+        const grandTotal = allResults.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
         if (grandTotal > 0) {
-          html += '<div class="grand-total">Total across ' + allResults.length +
-            ' jobs: <strong>' + grandTotal.toLocaleString() + ' pcs</strong></div>';
+          html += '<div class="grand-total" id="grand-total-bar">Total across ' + allResults.length +
+            ' jobs: <strong id="grand-total-value">' + grandTotal.toLocaleString() + ' pcs</strong></div>';
         }
       }
 
       for (const result of allResults) {
-        const { jobNumber, deduplicatedTotal, trips, raw } = result;
-        html += '<div class="job-group">';
+        const { jobNumber, deduplicatedTotal, trips, raw, confidence } = result;
+        const isFlagged = confidence.level === 'flagged';
+        const isNotFound = trips.length === 0;
+        const variantCount = raw.variants.length;
 
-        if (trips.length === 0) {
-          // No matches
-          html += '<div class="job-group-header">' +
+        const groupClass = 'job-group' +
+          (isFlagged ? ' job-group-flagged' : '') +
+          (isNotFound ? ' job-group-not-found' : '');
+        html += '<div class="' + groupClass + '" data-job="' + escapeHtml(jobNumber) + '">';
+
+        if (isNotFound) {
+          // Zero-result card
+          html += '<div class="job-group-header collapsed">' +
             '<span class="job-group-number">' + escapeHtml(jobNumber) + '</span>' +
-            '<span class="job-group-meta">no matches</span></div>';
-          html += '<div class="job-group-no-results">No occurrences found in this document.</div>';
+            '<span class="not-found-badge">Not Found</span></div>';
+          html += renderZeroResultBody(jobNumber);
+
         } else {
-          // Header (collapsed by default)
+          // Has data — build header
+          const displayTotal = getClarifiedTotal(result);
           const srcSummary = getSourceSummary(trips);
           const tripLabel = trips.length + ' trip' + (trips.length !== 1 ? 's' : '');
-          html += '<div class="job-group-header collapsed">' +
+          const hasClarifications = isFlagged && confidence.clarifications.length > 0;
+
+          // Header: not collapsed when clarification wrapper follows
+          html += '<div class="job-group-header' + (hasClarifications ? '' : ' collapsed') + '">' +
             '<span class="job-group-number">' + escapeHtml(jobNumber) + '</span>';
-          if (deduplicatedTotal > 0) {
-            html += '<span class="job-group-total">' + deduplicatedTotal.toLocaleString() + ' pcs</span>';
+          if (displayTotal > 0) {
+            html += '<span class="job-group-total" id="job-total-' + escapeHtml(jobNumber) + '">' +
+              displayTotal.toLocaleString() + ' pcs</span>';
           }
-          if (srcSummary) {
+          if (variantCount > 1) {
+            html += '<span class="job-group-source">' + variantCount + ' variants combined</span>';
+          } else if (srcSummary) {
             html += '<span class="job-group-source">' + escapeHtml(srcSummary) + '</span>';
           }
           html += '<span class="job-group-meta">' + tripLabel + '</span>' +
             '<button class="expand-btn">Details</button></div>';
 
-          // Detail panel
+          // Clarification wrapper (for flagged jobs)
+          if (hasClarifications) {
+            html += '<div class="clarification-wrapper clarification-bottom">';
+            for (let ci = 0; ci < confidence.clarifications.length; ci++) {
+              html += renderClarificationArea(confidence.clarifications[ci], jobNumber, jobNumber + '_' + ci);
+            }
+            html += '</div>';
+          }
+
+          // Variant info row (when variants exist and no clarification wrapper)
+          if (variantCount > 1 && !hasClarifications) {
+            html += '<div class="job-group-variants">Variants: ' +
+              raw.variants.map(function(v) { return escapeHtml(v); }).join(', ') + '</div>';
+          }
+
+          // Detail panel (hidden by default)
           html += '<div class="job-detail" hidden>';
+
+          // Variant breakdown in detail panel
+          if (variantCount > 1) {
+            html += renderVariantBreakdown(result);
+          }
+
           for (const trip of trips) {
             html += '<div class="trip-group">';
 
