@@ -6,6 +6,7 @@
   <title>BOL Extractor</title>
   <link rel="icon" type="image/png" href="BOL_icon.png">
   <link rel="apple-touch-icon" href="BOL_icon.png">
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" async></script>
   <script>
     document.documentElement.setAttribute('data-theme',
       localStorage.getItem('bol-theme') || 'dark'
@@ -507,6 +508,114 @@
     .variant-name { color: var(--text); font-weight: 500; }
     .variant-detail { color: var(--text-dim); }
     .variant-total { color: var(--accent); margin-left: auto; }
+
+    /* Phase 3.5: Filter PDF */
+    .filter-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+      padding: 0.5rem 1.2rem;
+      background: var(--surface-raised); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+      margin-bottom: 1rem; display: inline-block;
+    }
+    .filter-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    .filter-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+
+    .filter-panel-title {
+      font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.25rem;
+    }
+
+    .filter-panel-subtitle {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--accent);
+      margin-bottom: 0.75rem; font-weight: 500;
+    }
+
+    .filter-panel-desc {
+      font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;
+    }
+
+    .filter-sections-list {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .filter-section-item {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .filter-section-item:last-child { border-bottom: none; }
+    .filter-section-item:hover { background: var(--surface-hover); }
+
+    .filter-section-item input[type="checkbox"] {
+      margin-top: 0.2rem; accent-color: var(--accent); flex-shrink: 0;
+    }
+
+    .filter-section-info { flex: 1; min-width: 0; }
+
+    .filter-section-pages {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--text); font-weight: 500;
+    }
+
+    .filter-section-jobs {
+      font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 0.15rem;
+    }
+
+    .filter-numbering {
+      margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    }
+
+    .filter-numbering-label {
+      font-size: 0.82rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.4rem;
+    }
+
+    .filter-radio {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: var(--text); padding: 0.15rem 0; cursor: pointer;
+    }
+
+    .filter-radio input[type="radio"] { accent-color: var(--accent); }
+
+    .filter-actions {
+      display: flex; gap: 0.6rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;
+    }
+
+    .filter-generate-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+      padding: 0.5rem 1.2rem;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s;
+    }
+    .filter-generate-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .filter-generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .filter-cancel-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+      padding: 0.5rem 1rem;
+      background: var(--surface-raised); color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .filter-cancel-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    .filter-status {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--text-muted);
+    }
+
+    .filter-status-success {
+      color: var(--success);
+      animation: filter-fade 4s ease forwards;
+    }
+
+    @keyframes filter-fade {
+      0%, 70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -516,7 +625,7 @@
         <div>
           <div class="header-title">
             <h1>BOL Extractor</h1>
-            <span class="badge">Phase 3</span>
+            <span class="badge">Phase 3.5</span>
           </div>
           <p class="subtitle">Search daily BOL reports for job numbers with document-aware deduplication.</p>
         </div>
@@ -581,6 +690,9 @@
     let clarificationState = {};
     let currentResults = null;
     let allJobNumbersCache = null;
+    let filterSections = null;
+    let originalPdfBuffer = null;
+    let originalFileName = '';
 
     // --- DOM refs ---
     const dropZone = document.getElementById('drop-zone');
@@ -1127,6 +1239,8 @@
 
       try {
         const arrayBuffer = await file.arrayBuffer();
+        originalPdfBuffer = arrayBuffer;
+        originalFileName = file.name;
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
         const pages = [];
@@ -1187,6 +1301,9 @@
       clarificationState = {};
       currentResults = null;
       allJobNumbersCache = null;
+      filterSections = null;
+      originalPdfBuffer = null;
+      originalFileName = '';
       fileInfo.hidden = true;
       sectionMetaEl.hidden = true;
       dropZone.hidden = false;
@@ -1203,6 +1320,7 @@
       searchInput.value = '';
       clarificationState = {};
       currentResults = null;
+      filterSections = null;
       resultsSection.hidden = true;
       clearStatus();
       searchInput.focus();
@@ -1211,6 +1329,11 @@
     // --- Event delegation ---
 
     resultsBody.addEventListener('click', (e) => {
+      // Phase 3.5: Filter panel buttons
+      if (e.target.closest('#filter-btn')) { showFilterPanel(); return; }
+      if (e.target.closest('#filter-cancel-btn')) { hideFilterPanel(); return; }
+      if (e.target.closest('#filter-generate-btn')) { generateFilteredPdf(); return; }
+
       // Phase 3: Clarification buttons
       const clarBtn = e.target.closest('.clarification-btn');
       if (clarBtn) {
@@ -1246,6 +1369,18 @@
       }
 
       btn.textContent = wasHidden ? 'Hide' : 'Details';
+    });
+
+    // Phase 3.5: Filter checkbox changes
+    resultsBody.addEventListener('change', (e) => {
+      const cb = e.target.closest('.filter-section-cb');
+      if (cb && filterSections) {
+        const idx = parseInt(cb.dataset.filterIdx, 10);
+        if (filterSections[idx] !== undefined) {
+          filterSections[idx].checked = cb.checked;
+          updateFilterSummary();
+        }
+      }
     });
 
     // --- Search ---
@@ -1323,6 +1458,7 @@
       // Phase 3: Reset clarification state for each new search
       clarificationState = {};
       currentResults = null;
+      filterSections = null;
 
       const parsed = parseJobInput();
       if (!parsed) return;
@@ -1618,6 +1754,11 @@
         }
       }
 
+      // Phase 3.5: Filter PDF button
+      if (jobsWithData.length > 0) {
+        html += '<div id="filter-area"><button class="filter-btn" id="filter-btn">Filter PDF</button></div>';
+      }
+
       for (const result of allResults) {
         const { jobNumber, deduplicatedTotal, trips, raw, confidence } = result;
         const isFlagged = confidence.level === 'flagged';
@@ -1811,6 +1952,261 @@
 
       resultsBody.innerHTML = html;
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // --- Phase 3.5: PDF Filter ---
+
+    function buildFilterableSections() {
+      if (!currentResults || !documentSections) return [];
+      const filterable = [];
+      const jobsWithData = currentResults.filter(function(r) { return r.trips && r.trips.length > 0; });
+
+      for (let si = 0; si < documentSections.length; si++) {
+        const section = documentSections[si];
+        if (section.type === 'vehicle_inspection') continue;
+
+        const jobsInSection = [];
+
+        for (const result of jobsWithData) {
+          let parsed;
+          if (section.type === 'manifest') parsed = parseManifestSection(section, result.jobNumber);
+          else if (section.type === 'sg360_bol') parsed = parseSG360Section(section, result.jobNumber);
+          else if (section.type === 'uniform_bol') parsed = parseUniformSection(section, result.jobNumber);
+
+          if (parsed && (parsed.total > 0 || parsed.entries.length > 0)) {
+            jobsInSection.push(result.jobNumber);
+          }
+        }
+
+        if (jobsInSection.length > 0) {
+          filterable.push({
+            sectionIndex: si,
+            type: section.type,
+            startPage: section.startPage,
+            endPage: section.endPage,
+            metadata: section.metadata,
+            jobs: jobsInSection,
+            checked: true,
+          });
+        }
+      }
+
+      return filterable;
+    }
+
+    function getFilteredPageCount() {
+      if (!filterSections) return 0;
+      const pages = new Set();
+      for (const s of filterSections) {
+        if (!s.checked) continue;
+        for (let p = s.startPage; p <= s.endPage; p++) pages.add(p);
+      }
+      return pages.size;
+    }
+
+    function updateFilterSummary() {
+      const countEl = document.getElementById('filter-page-count');
+      const genBtn = document.getElementById('filter-generate-btn');
+      const emptyHint = document.getElementById('filter-empty-hint');
+      if (!countEl || !genBtn) return;
+
+      const totalPages = pdfPages ? pdfPages.length : 0;
+      const filteredPages = getFilteredPageCount();
+      const anyChecked = filterSections && filterSections.some(function(s) { return s.checked; });
+
+      countEl.textContent = 'Reducing ' + totalPages + ' pages to ' + filteredPages + ' pages';
+      genBtn.disabled = !anyChecked;
+      if (emptyHint) emptyHint.hidden = anyChecked;
+    }
+
+    function showFilterPanel() {
+      if (typeof PDFLib === 'undefined') {
+        showStatus('PDF filtering is unavailable \u2014 the required library could not be loaded. Check your internet connection and reload the page.', 'error');
+        return;
+      }
+
+      const area = document.getElementById('filter-area');
+      if (!area) return;
+
+      filterSections = buildFilterableSections();
+      if (filterSections.length === 0) return;
+
+      const totalPages = pdfPages ? pdfPages.length : 0;
+      const filteredPages = getFilteredPageCount();
+
+      let html = '<div class="filter-panel" id="filter-panel">';
+      html += '<div class="filter-panel-title">Filter PDF</div>';
+      html += '<div class="filter-panel-subtitle" id="filter-page-count">Reducing ' +
+        totalPages + ' pages to ' + filteredPages + ' pages</div>';
+      html += '<div class="filter-panel-desc">The following document sections contain your searched jobs and will be kept:</div>';
+
+      html += '<div class="filter-sections-list">';
+      for (let i = 0; i < filterSections.length; i++) {
+        const s = filterSections[i];
+        const pageLabel = s.startPage === s.endPage
+          ? 'Page ' + s.startPage
+          : 'Pages ' + s.startPage + '\u2013' + s.endPage;
+        const typeLabel = sectionTypeLabel(s.type);
+        const idLabel = s.metadata.manifestNumber || s.metadata.tripNumber || '';
+
+        html += '<div class="filter-section-item">';
+        html += '<input type="checkbox" class="filter-section-cb" data-filter-idx="' + i + '" checked>';
+        html += '<div class="filter-section-info">';
+        html += '<div class="filter-section-pages">' + escapeHtml(pageLabel) +
+          ' \u2014 ' + escapeHtml(typeLabel) + (idLabel ? ' ' + escapeHtml(idLabel) : '') + '</div>';
+        html += '<div class="filter-section-jobs">Jobs: ' + s.jobs.map(escapeHtml).join(', ') + '</div>';
+        html += '</div></div>';
+      }
+      html += '</div>';
+
+      html += '<div class="filter-numbering">';
+      html += '<div class="filter-numbering-label">Page numbering in output PDF:</div>';
+      html += '<label class="filter-radio"><input type="radio" name="filter-numbering" value="original">' +
+        ' Keep original page numbers (e.g., 8, 9, 10, 24, 25\u2026)</label>';
+      html += '<label class="filter-radio"><input type="radio" name="filter-numbering" value="sequential" checked>' +
+        ' Renumber sequentially (1, 2, 3, 4\u2026)</label>';
+      html += '</div>';
+
+      html += '<div id="filter-empty-hint" class="filter-panel-desc" ' +
+        'style="color: var(--warn); margin-top: 0.75rem;" hidden>' +
+        'Select at least one section to generate a PDF.</div>';
+
+      html += '<div class="filter-actions">';
+      html += '<button class="filter-generate-btn" id="filter-generate-btn">Generate Filtered PDF</button>';
+      html += '<button class="filter-cancel-btn" id="filter-cancel-btn">Cancel</button>';
+      html += '<span class="filter-status" id="filter-status"></span>';
+      html += '</div>';
+
+      html += '</div>';
+
+      area.innerHTML = html;
+    }
+
+    function hideFilterPanel() {
+      const area = document.getElementById('filter-area');
+      if (!area) return;
+      filterSections = null;
+      area.innerHTML = '<button class="filter-btn" id="filter-btn">Filter PDF</button>';
+    }
+
+    function getFilterFilename() {
+      const base = originalFileName.replace(/\.pdf$/i, '').replace(/[\/\\:*?"<>|]/g, '_');
+      const jobs = currentResults
+        .filter(function(r) { return r.trips && r.trips.length > 0; })
+        .map(function(r) { return r.jobNumber; });
+
+      let name = 'bol-filtered-' + base + '-' + jobs.join('-');
+
+      if (name.length + 4 > 120) {
+        let truncated = 'bol-filtered-' + base;
+        for (const job of jobs) {
+          const next = truncated + '-' + job;
+          if (next.length + 8 > 120) {
+            truncated += '-etc';
+            break;
+          }
+          truncated = next;
+        }
+        name = truncated;
+      }
+
+      return name + '.pdf';
+    }
+
+    async function generateFilteredPdf() {
+      if (!filterSections || !originalPdfBuffer) return;
+
+      const statusEl = document.getElementById('filter-status');
+      const genBtn = document.getElementById('filter-generate-btn');
+
+      if (typeof PDFLib === 'undefined') {
+        if (statusEl) {
+          statusEl.textContent = 'PDF filtering is unavailable \u2014 the required library could not be loaded. Check your internet connection and reload the page.';
+          statusEl.style.color = 'var(--error)';
+        }
+        return;
+      }
+
+      // Collect selected page indices (0-based for pdf-lib)
+      const pageIndices = new Set();
+      for (const s of filterSections) {
+        if (!s.checked) continue;
+        for (let p = s.startPage; p <= s.endPage; p++) {
+          pageIndices.add(p - 1);
+        }
+      }
+
+      if (pageIndices.size === 0) return;
+
+      const sortedIndices = [...pageIndices].sort(function(a, b) { return a - b; });
+
+      if (genBtn) genBtn.disabled = true;
+      if (statusEl) {
+        statusEl.textContent = 'Generating filtered PDF\u2026';
+        statusEl.className = 'filter-status';
+        statusEl.style.color = '';
+      }
+
+      try {
+        const srcDoc = await PDFLib.PDFDocument.load(originalPdfBuffer);
+        const newDoc = await PDFLib.PDFDocument.create();
+
+        const copiedPages = await newDoc.copyPages(srcDoc, sortedIndices);
+        for (const page of copiedPages) {
+          newDoc.addPage(page);
+        }
+
+        // Apply page numbering option
+        const numbering = document.querySelector('input[name="filter-numbering"]:checked');
+        const useOriginal = numbering && numbering.value === 'original';
+
+        if (useOriginal) {
+          try {
+            const context = newDoc.context;
+            // Build page label entries for contiguous runs of original pages
+            const entries = [];
+            for (let i = 0; i < sortedIndices.length; i++) {
+              if (i === 0 || sortedIndices[i] !== sortedIndices[i - 1] + 1) {
+                entries.push(i);
+                entries.push({ S: 'D', St: sortedIndices[i] + 1 });
+              }
+            }
+            const pageLabels = context.obj({ Nums: entries });
+            newDoc.catalog.set(PDFLib.PDFName.of('PageLabels'), pageLabels);
+          } catch (e) {
+            // Page labels failed — fall back to sequential numbering silently
+          }
+        }
+
+        const pdfBytes = await newDoc.save();
+        const filename = getFilterFilename();
+
+        // Trigger browser download
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (statusEl) {
+          statusEl.textContent = 'Filtered PDF downloaded';
+          statusEl.className = 'filter-status filter-status-success';
+          statusEl.style.color = '';
+        }
+        if (genBtn) genBtn.disabled = false;
+
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = 'Could not generate filtered PDF. ' + (err.message || '');
+          statusEl.className = 'filter-status';
+          statusEl.style.color = 'var(--error)';
+        }
+        if (genBtn) genBtn.disabled = false;
+      }
     }
   </script>
 </body>
