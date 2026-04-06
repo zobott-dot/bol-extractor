@@ -1239,7 +1239,7 @@
 
       try {
         const arrayBuffer = await file.arrayBuffer();
-        originalPdfBuffer = arrayBuffer;
+        originalPdfBuffer = arrayBuffer.slice(0);
         originalFileName = file.name;
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const totalPages = pdf.numPages;
