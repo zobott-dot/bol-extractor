@@ -905,6 +905,11 @@
 
       if (current) sections.push(current);
 
+      // Fix section end boundaries: each section ends one page before the next starts
+      for (let i = 0; i < sections.length - 1; i++) {
+        sections[i].endPage = sections[i + 1].startPage - 1;
+      }
+
       for (const section of sections) {
         for (const line of section.lines) {
           if (!section.metadata.tripNumber) {
