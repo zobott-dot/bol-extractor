@@ -616,6 +616,105 @@
       0%, 70% { opacity: 1; }
       100% { opacity: 0; }
     }
+
+    /* Phase 4a: Export */
+    .action-row {
+      display: flex; gap: 0.6rem; align-items: flex-start;
+      flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .action-row .filter-btn { margin-bottom: 0; }
+
+    .export-wrapper { position: relative; }
+
+    .export-btn {
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+      padding: 0.5rem 1.2rem;
+      background: var(--surface-raised); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .export-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    .export-menu {
+      position: absolute; top: 100%; left: 0; margin-top: 4px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      min-width: 200px; z-index: 100; overflow: hidden;
+    }
+
+    .export-menu-item {
+      display: block; width: 100%; padding: 0.6rem 1rem;
+      font-family: var(--sans); font-size: 0.82rem; font-weight: 500;
+      color: var(--text); background: none; border: none;
+      text-align: left; cursor: pointer; transition: background 0.1s;
+    }
+    .export-menu-item:hover { background: var(--surface-hover); }
+    .export-menu-item + .export-menu-item { border-top: 1px solid var(--border); }
+
+    /* Print-only elements hidden on screen */
+    #print-header, #print-grand-total, #print-footer { display: none; }
+
+    /* Print stylesheet */
+    @media print {
+      :root, [data-theme="dark"], [data-theme="light"] {
+        --bg: #fff; --surface: #fff; --surface-hover: #fff;
+        --surface-raised: #f5f5f5; --border: #ccc;
+        --text: #000; --text-muted: #444; --text-dim: #666;
+        --accent: #333; --accent-soft: transparent;
+        --success: #000; --success-soft: transparent;
+        --warn: #666; --warn-soft: transparent;
+        --error: #444; --error-soft: transparent;
+      }
+
+      body { background: #fff; }
+      .container { padding: 0; max-width: 100%; }
+
+      /* Hide UI chrome */
+      header, #upload-section, #search-section, #status-area,
+      .action-row, #filter-area, .expand-btn, .results-header,
+      .clarification-actions, .job-group-not-found,
+      #grand-total-bar { display: none !important; }
+
+      /* Show print elements */
+      #print-header {
+        display: block !important; margin-bottom: 24px;
+        font-size: 13px; line-height: 1.8;
+      }
+      #print-header-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+      #print-grand-total { display: block !important; margin-top: 1rem; }
+      #print-footer {
+        display: block !important; margin-top: 2rem; padding-top: 1rem;
+        border-top: 1px solid #ccc; font-size: 10px; color: #888; text-align: center;
+      }
+
+      /* Results card: remove card chrome */
+      .card { border: none; padding: 0; background: none; margin-bottom: 0; }
+
+      /* Force detail panels visible */
+      .job-detail[hidden] { display: block !important; }
+      .job-detail { max-height: none !important; overflow: visible !important; }
+      .job-group-results { max-height: none !important; overflow: visible !important; }
+
+      /* Fix collapsed headers when detail is forced visible */
+      .job-group-header.collapsed {
+        border-radius: var(--radius) var(--radius) 0 0;
+        border-bottom: none;
+      }
+
+      /* Fix clarification wrapper border when detail follows */
+      .clarification-wrapper.clarification-bottom {
+        border-bottom: none; border-radius: 0;
+      }
+
+      /* Flagged border: gray instead of amber */
+      .job-group-flagged > .job-group-header { border-left-color: #999; }
+      .clarification-area { border-left-color: #999; background: #f9f9f9; }
+      .clarification-resolved { border-left-color: #999; background: #f9f9f9; }
+
+      /* Page layout */
+      .job-group { page-break-inside: avoid; margin-bottom: 1.5rem; }
+      @page { margin: 1.5cm; }
+    }
   </style>
 </head>
 <body>
@@ -625,7 +724,7 @@
         <div>
           <div class="header-title">
             <h1>BOL Extractor</h1>
-            <span class="badge">Phase 3.5</span>
+            <span class="badge">Phase 4a</span>
           </div>
           <p class="subtitle">Search daily BOL reports for job numbers with document-aware deduplication.</p>
         </div>
@@ -671,6 +770,13 @@
     </section>
 
     <div id="status-area"></div>
+
+    <div id="print-header">
+      <div id="print-header-title">BOL Extractor Results</div>
+      Source: <span id="print-source"></span><br>
+      Processed: <span id="print-date"></span><br>
+      Searched: <span id="print-jobs"></span>
+    </div>
 
     <section class="card" id="results-section" hidden>
       <div class="results-header">
@@ -1339,6 +1445,11 @@
       if (e.target.closest('#filter-cancel-btn')) { hideFilterPanel(); return; }
       if (e.target.closest('#filter-generate-btn')) { generateFilteredPdf(); return; }
 
+      // Phase 4a: Export menu
+      if (e.target.closest('#export-btn')) { toggleExportMenu(); return; }
+      const exportMenuItem = e.target.closest('.export-menu-item');
+      if (exportMenuItem) { handleExportAction(exportMenuItem.dataset.action); return; }
+
       // Phase 3: Clarification buttons
       const clarBtn = e.target.closest('.clarification-btn');
       if (clarBtn) {
@@ -1759,9 +1870,18 @@
         }
       }
 
-      // Phase 3.5: Filter PDF button
+      // Phase 3.5+4a: Action buttons
       if (jobsWithData.length > 0) {
-        html += '<div id="filter-area"><button class="filter-btn" id="filter-btn">Filter PDF</button></div>';
+        html += '<div class="action-row">';
+        html += '<button class="filter-btn" id="filter-btn">Filter PDF</button>';
+        html += '<div class="export-wrapper" id="export-wrapper">';
+        html += '<button class="export-btn" id="export-btn">Export</button>';
+        html += '<div class="export-menu" id="export-menu" hidden>';
+        html += '<button class="export-menu-item" data-action="clipboard">Copy to Clipboard</button>';
+        html += '<button class="export-menu-item" data-action="csv">Download CSV</button>';
+        html += '<button class="export-menu-item" data-action="print">Print / Save as PDF</button>';
+        html += '</div></div></div>';
+        html += '<div id="filter-area"></div>';
       }
 
       for (const result of allResults) {
@@ -1876,6 +1996,22 @@
           '<span class="not-found-badge">Skipped</span>' +
           '<span class="job-group-meta">' + escapeHtml(inv.reason) + '</span></div></div>';
       }
+
+      // Print-only grand total at end and footer
+      if (jobsWithData.length >= 2) {
+        const printGrand = allResults.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
+        html += '<div id="print-grand-total" class="grand-total">Total: <strong>' +
+          printGrand.toLocaleString() + ' pcs</strong></div>';
+      }
+      html += '<div id="print-footer">Generated by BOL Extractor</div>';
+
+      // Update print header
+      const printSource = document.getElementById('print-source');
+      const printDate = document.getElementById('print-date');
+      const printJobs = document.getElementById('print-jobs');
+      if (printSource) printSource.textContent = originalFileName;
+      if (printDate) printDate.textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      if (printJobs) printJobs.textContent = jobsWithData.map(function(r) { return r.jobNumber; }).join(', ');
 
       resultsBody.innerHTML = html;
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2085,13 +2221,16 @@
       html += '</div>';
 
       area.innerHTML = html;
+      const filterBtn = document.getElementById('filter-btn');
+      if (filterBtn) filterBtn.hidden = true;
     }
 
     function hideFilterPanel() {
       const area = document.getElementById('filter-area');
-      if (!area) return;
+      if (area) area.innerHTML = '';
       filterSections = null;
-      area.innerHTML = '<button class="filter-btn" id="filter-btn">Filter PDF</button>';
+      const filterBtn = document.getElementById('filter-btn');
+      if (filterBtn) filterBtn.hidden = false;
     }
 
     function getFilterFilename() {
@@ -2212,6 +2351,208 @@
         }
         if (genBtn) genBtn.disabled = false;
       }
+    }
+    // --- Phase 4a: Export ---
+
+    function toggleExportMenu() {
+      const menu = document.getElementById('export-menu');
+      if (menu) menu.hidden = !menu.hidden;
+    }
+
+    function closeExportMenu() {
+      const menu = document.getElementById('export-menu');
+      if (menu) menu.hidden = true;
+    }
+
+    document.addEventListener('click', function(e) {
+      const menu = document.getElementById('export-menu');
+      if (menu && !menu.hidden && !e.target.closest('.export-wrapper')) {
+        menu.hidden = true;
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const menu = document.getElementById('export-menu');
+        if (menu && !menu.hidden) menu.hidden = true;
+      }
+    });
+
+    function getExportableResults() {
+      if (!currentResults) return [];
+      return currentResults.filter(function(r) { return r.trips && r.trips.length > 0; });
+    }
+
+    function formatExportDate() {
+      return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function getExportSourceLabel(result, longForm) {
+      const longLabels = { manifest: 'Manifest total', sg360_bol: 'SG360 BOL summary', uniform_bol: 'Uniform BOL pallet sum' };
+      const shortLabels = { manifest: 'Manifest', sg360_bol: 'SG360 BOL', uniform_bol: 'Uniform BOL' };
+      const labels = longForm ? longLabels : shortLabels;
+
+      const sources = [];
+      for (let ti = 0; ti < result.trips.length; ti++) {
+        let src = result.trips[ti].source;
+        // Reflect user's clarification choice if they switched sources
+        if (result.confidence && result.confidence.clarifications) {
+          for (let ci = 0; ci < result.confidence.clarifications.length; ci++) {
+            const clar = result.confidence.clarifications[ci];
+            if (clar.tripIndex === ti && clar.type === 'source_mismatch') {
+              const clarId = result.jobNumber + '_' + ci;
+              const state = clarificationState[clarId];
+              if (state && state.resolved && state.choice === 'alternative') {
+                src = clar.alternativeSource;
+              }
+            }
+          }
+        }
+        sources.push(src);
+      }
+
+      const unique = [...new Set(sources)];
+      if (unique.length === 1) return labels[unique[0]] || unique[0];
+      return unique.map(function(t) { return labels[t] || t; }).join(' + ');
+    }
+
+    function getExportNotes(result) {
+      const notes = result.trips.map(function(trip) { return getDedupNote(trip); });
+      let combined = notes.join('; ');
+      if (result.confidence && result.confidence.clarifications) {
+        for (let ci = 0; ci < result.confidence.clarifications.length; ci++) {
+          const clarId = result.jobNumber + '_' + ci;
+          const state = clarificationState[clarId];
+          if (state && state.resolved) {
+            combined += ' (user clarified)';
+            break;
+          }
+        }
+      }
+      return combined;
+    }
+
+    function csvEscape(field) {
+      const str = String(field);
+      if (/[,"\n\r]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+      return str;
+    }
+
+    function getExportCsvFilename() {
+      const base = originalFileName.replace(/\.pdf$/i, '').replace(/[\/\\:*?"<>|]/g, '_');
+      const jobs = getExportableResults().map(function(r) { return r.jobNumber; });
+      let name = 'bol-results-' + base + '-' + jobs.join(',');
+      if (name.length + 4 > 120) {
+        let truncated = 'bol-results-' + base;
+        for (let i = 0; i < jobs.length; i++) {
+          const sep = i === 0 ? '-' : ',';
+          const next = truncated + sep + jobs[i];
+          if (next.length + 8 > 120) { truncated += '-etc'; break; }
+          truncated = next;
+        }
+        name = truncated;
+      }
+      return name + '.csv';
+    }
+
+    function flashExportButton(message) {
+      const btn = document.getElementById('export-btn');
+      if (!btn) return;
+      const original = btn.textContent;
+      btn.textContent = message;
+      btn.style.borderColor = 'var(--success)';
+      btn.style.color = 'var(--success)';
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 1500);
+    }
+
+    function handleExportAction(action) {
+      closeExportMenu();
+      if (action === 'clipboard') exportClipboard();
+      else if (action === 'csv') exportCsv();
+      else if (action === 'print') exportPrint();
+    }
+
+    function exportClipboard() {
+      const results = getExportableResults();
+      if (results.length === 0) return;
+
+      const lines = [];
+      lines.push('BOL Extractor Results');
+      lines.push('Source: ' + originalFileName);
+      lines.push('Processed: ' + formatExportDate());
+      lines.push('');
+
+      for (const r of results) {
+        const total = getClarifiedTotal(r);
+        const source = getExportSourceLabel(r, true);
+        lines.push('Job ' + r.jobNumber + ': ' + total.toLocaleString() + ' pieces (' + source + ')');
+      }
+
+      if (results.length > 1) {
+        const grand = results.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
+        lines.push('');
+        lines.push('Total: ' + grand.toLocaleString() + ' pieces');
+      }
+
+      navigator.clipboard.writeText(lines.join('\n')).then(function() {
+        flashExportButton('Copied!');
+      }).catch(function() {
+        flashExportButton('Copy failed');
+      });
+    }
+
+    function exportCsv() {
+      const results = getExportableResults();
+      if (results.length === 0) return;
+
+      const rows = [];
+      rows.push(['Job Number', 'Total Pieces', 'Source', 'Confidence', 'Notes'].map(csvEscape).join(','));
+
+      for (const r of results) {
+        const total = getClarifiedTotal(r);
+        const source = getExportSourceLabel(r, false);
+        const confidence = (r.confidence && r.confidence.level === 'flagged') ? 'Flagged' : 'High';
+        const notes = getExportNotes(r);
+        rows.push([r.jobNumber, total, source, confidence, notes].map(csvEscape).join(','));
+      }
+
+      const csv = rows.join('\r\n') + '\r\n';
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = getExportCsvFilename();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      flashExportButton('Downloaded!');
+    }
+
+    function exportPrint() {
+      const results = getExportableResults();
+
+      // Update print header with latest data
+      const printSource = document.getElementById('print-source');
+      const printDate = document.getElementById('print-date');
+      const printJobs = document.getElementById('print-jobs');
+      if (printSource) printSource.textContent = originalFileName;
+      if (printDate) printDate.textContent = formatExportDate();
+      if (printJobs) printJobs.textContent = results.map(function(r) { return r.jobNumber; }).join(', ');
+
+      // Update print grand total with latest clarified values
+      const printGrandTotal = document.getElementById('print-grand-total');
+      if (printGrandTotal && results.length >= 2) {
+        const grand = results.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
+        printGrandTotal.innerHTML = 'Total: <strong>' + grand.toLocaleString() + ' pcs</strong>';
+      }
+
+      window.print();
     }
   </script>
 </body>
