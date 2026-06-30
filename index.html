@@ -446,13 +446,27 @@
     }
 
     .clarification-resolved {
-      padding: 0.65rem 0.85rem;
+      padding: 0.55rem 0.85rem;
       background: var(--success-soft);
       border-left: 2px solid var(--success);
       font-size: 0.78rem;
       color: var(--success);
       font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
       transition: opacity 0.25s ease;
+    }
+    .clarification-resolved-text { flex: 1 1 auto; }
+    .clarification-change-btn {
+      font-family: var(--sans); font-size: 0.74rem; font-weight: 500;
+      padding: 0.2rem 0.6rem; border-radius: 3px; cursor: pointer;
+      border: 1px solid var(--success); background: transparent; color: var(--success);
+      transition: background 0.15s;
+    }
+    .clarification-change-btn:hover {
+      background: rgba(0,0,0,0);
+      filter: brightness(0.92);
     }
 
     /* Zero result */
@@ -672,7 +686,7 @@
       /* Hide UI chrome */
       header, #upload-section, #search-section, #status-area,
       .action-row, #filter-area, .expand-btn, .results-header,
-      .clarification-actions, .job-group-not-found,
+      .clarification-actions, .clarification-change-btn, .job-group-not-found,
       #grand-total-bar { display: none !important; }
 
       /* Show print elements */
@@ -709,7 +723,7 @@
       /* Flagged border: gray instead of amber */
       .job-group-flagged > .job-group-header { border-left-color: #999; }
       .clarification-area { border-left-color: #999; background: #f9f9f9; }
-      .clarification-resolved { border-left-color: #999; background: #f9f9f9; }
+      .clarification-resolved { border-left-color: #999; background: #f9f9f9; color: #333; }
 
       /* Page layout */
       .job-group { page-break-inside: avoid; margin-bottom: 1.5rem; }
@@ -856,6 +870,13 @@
         const isNegative = lineText.indexOf(s) > 0 && lineText[lineText.indexOf(s) - 1] === '-';
         return { raw: s, value, negative: isNegative };
       });
+    }
+
+    // Drop discriminator: the F#R# token in the Version/Form column distinguishes
+    // additive drops (e.g. F7R3 vs F8R3 under the same job) from true duplicates.
+    function extractFormRun(text) {
+      const m = text.match(/\bF\d+R\d+\b/i);
+      return m ? m[0].toUpperCase() : null;
     }
 
     function sectionTypeLabel(type) {
@@ -1044,10 +1065,12 @@
       );
       let trackingMyJob = false;
       let pendingJobNumberLine = false;
+      let currentFormRun = null;
       let total = null;
       let totalPage = null;
       let totalSource = null;
       let totalLineText = null;
+      let totalFormRun = null;
       const entries = [];
 
       for (const line of section.lines) {
@@ -1063,6 +1086,7 @@
               totalPage = line.pageNum;
               totalSource = 'Job Number Total';
               totalLineText = text;
+              totalFormRun = currentFormRun;
               trackingMyJob = false;
               continue;
             }
@@ -1075,11 +1099,14 @@
 
         if (jobMatch) {
           trackingMyJob = true;
+          const fr = extractFormRun(text);
+          if (fr) currentFormRun = fr;
           const qty = extractCommaNumbers(text);
           if (qty.length > 0) {
             entries.push({
               page: line.pageNum, lineText: text,
               quantity: qty[0].value, raw: qty[0].raw, variant: jobMatch[1],
+              formRun: fr || currentFormRun,
             });
           }
         } else {
@@ -1098,6 +1125,7 @@
             totalPage = line.pageNum;
             totalSource = 'Job Number Total';
             totalLineText = text;
+            totalFormRun = currentFormRun;
           } else {
             const plain = text.match(/total\s+(\d+)/i);
             if (plain) {
@@ -1105,6 +1133,7 @@
               totalPage = line.pageNum;
               totalSource = 'Job Number Total';
               totalLineText = text;
+              totalFormRun = currentFormRun;
             }
           }
           trackingMyJob = false;
@@ -1120,7 +1149,7 @@
         totalPage = entries[0].page;
       }
 
-      return { total: total || 0, totalSource, totalPage, totalLineText, entries };
+      return { total: total || 0, totalSource, totalPage, totalLineText, totalFormRun, entries };
     }
 
     function parseSG360Section(section, baseJob) {
@@ -1138,6 +1167,7 @@
         entries.push({
           page: line.pageNum, lineText: line.text,
           quantity: qty[0].value, raw: qty[0].raw, variant: m[1],
+          formRun: extractFormRun(line.text),
         });
       }
 
@@ -1147,6 +1177,7 @@
         totalSource: entries.length > 0 ? 'Sum of ' + entries.length + ' entries' : null,
         totalPage: entries.length > 0 ? entries[0].page : null,
         totalLineText: null,
+        totalFormRun: null,
         entries,
       };
     }
@@ -1174,16 +1205,67 @@
         else if (section.type === 'sg360_bol') result = parseSG360Section(section, baseJob);
         else if (section.type === 'uniform_bol') result = parseUniformSection(section, baseJob);
 
-        if (result && (result.total > 0 || result.entries.length > 0)) {
+        if (!result || (result.total === 0 && result.entries.length === 0)) continue;
+
+        // Split one section's parsed result into per-formRun sub-findings so that
+        // additive drops (different F#R# under the same job) are tracked separately
+        // and only same-drop BOL <-> Manifest pairs get compared for mismatch.
+        const byFormRun = new Map();
+        for (const entry of result.entries) {
+          const key = entry.formRun || '__noFormRun__';
+          if (!byFormRun.has(key)) byFormRun.set(key, []);
+          byFormRun.get(key).push(entry);
+        }
+
+        if (byFormRun.size === 0) {
+          // Total but no entries (rare): keep as a single finding.
           findings.push({
             sectionType: section.type,
             sectionIndex: si,
             tripNumber: section.metadata.tripNumber || null,
+            formRun: null,
             total: result.total,
             totalSource: result.totalSource,
             totalPage: result.totalPage,
             totalLineText: result.totalLineText,
-            entries: result.entries,
+            entries: [],
+          });
+          continue;
+        }
+
+        const singleGroup = byFormRun.size === 1;
+        for (const [key, groupEntries] of byFormRun) {
+          const formRun = key === '__noFormRun__' ? null : key;
+          let subTotal, subSource, subPage, subLineText;
+          // The manifest's authoritative "Job Number Total" can be claimed by a
+          // sub-finding only when the section's entries don't straddle multiple
+          // drops; otherwise that total represents the sum of all drops and
+          // can't be attributed to one.
+          const authoritativeBelongsHere =
+            singleGroup &&
+            result.totalSource === 'Job Number Total' &&
+            (result.totalFormRun == null || result.totalFormRun === formRun);
+          if (authoritativeBelongsHere) {
+            subTotal = result.total;
+            subSource = result.totalSource;
+            subPage = result.totalPage;
+            subLineText = result.totalLineText;
+          } else {
+            subTotal = groupEntries.reduce((s, e) => s + e.quantity, 0);
+            subSource = 'Sum of ' + groupEntries.length + ' entries';
+            subPage = groupEntries[0].page;
+            subLineText = null;
+          }
+          findings.push({
+            sectionType: section.type,
+            sectionIndex: si,
+            tripNumber: section.metadata.tripNumber || null,
+            formRun,
+            total: subTotal,
+            totalSource: subSource,
+            totalPage: subPage,
+            totalLineText: subLineText,
+            entries: groupEntries,
           });
         }
       }
@@ -1212,30 +1294,37 @@
         if (best) f.tripNumber = best.tripNumber;
       }
 
-      // Group by trip
-      const tripGroups = new Map();
+      // Group by drop: formRun is the true discriminator (additive drops vs
+      // true duplicate). Fall back to tripNumber (legacy behavior) when
+      // form/run wasn't recoverable, then per-section as a last resort.
+      const dropGroups = new Map();
       for (const f of findings) {
-        const key = f.tripNumber || 'unknown_' + f.sectionIndex;
-        if (!tripGroups.has(key)) tripGroups.set(key, []);
-        tripGroups.get(key).push(f);
+        const key = f.formRun
+          ? 'fr:' + f.formRun
+          : f.tripNumber
+            ? 'tr:' + f.tripNumber
+            : 'sx:' + f.sectionIndex;
+        if (!dropGroups.has(key)) dropGroups.set(key, []);
+        dropGroups.get(key).push(f);
       }
 
       const trips = [];
       let deduplicatedTotal = 0;
 
-      for (const [tripKey, groupFindings] of tripGroups) {
+      for (const [, groupFindings] of dropGroups) {
         groupFindings.sort((a, b) => (PRIORITY[b.sectionType] || 0) - (PRIORITY[a.sectionType] || 0));
         const winner = groupFindings[0];
         const excluded = groupFindings.slice(1).map(f => ({
           sectionType: f.sectionType,
           total: f.total,
-          reason: 'Duplicate of ' + sectionTypeLabel(winner.sectionType) + ' (same trip)',
+          reason: 'Duplicate of ' + sectionTypeLabel(winner.sectionType) + ' (same drop)',
           entries: f.entries,
         }));
 
         deduplicatedTotal += winner.total;
         trips.push({
-          tripNumber: tripKey.startsWith('unknown_') ? null : tripKey,
+          tripNumber: winner.tripNumber || null,
+          formRun: winner.formRun || null,
           total: winner.total,
           source: winner.sectionType,
           sourceDetail: winner.totalSource,
@@ -1451,6 +1540,11 @@
       if (exportMenuItem) { handleExportAction(exportMenuItem.dataset.action); return; }
 
       // Phase 3: Clarification buttons
+      const changeBtn = e.target.closest('.clarification-change-btn');
+      if (changeBtn) {
+        handleClarificationChange(changeBtn);
+        return;
+      }
       const clarBtn = e.target.closest('.clarification-btn');
       if (clarBtn) {
         handleClarificationChoice(clarBtn);
@@ -1681,13 +1775,16 @@
 
     // --- Phase 3: Render helpers ---
 
-    function renderClarificationArea(clar, jobNumber, clarId) {
+    function renderClarificationArea(clar, jobNumber, clarId, currentChoice) {
       let html = '<div class="clarification-area" data-clar-id="' + escapeHtml(clarId) + '">';
 
       if (clar.type === 'source_mismatch') {
         const tripLabel = clar.tripNumber ? 'Trip ' + clar.tripNumber : 'Unknown trip';
         const curLabel = sectionTypeLabel(clar.currentSource);
         const altLabel = sectionTypeLabel(clar.alternativeSource);
+        // Highlight the previously-chosen option when re-expanded after a resolution.
+        const keepPrimary = currentChoice !== 'alternative';
+        const altPrimary = currentChoice === 'alternative';
         html += '<div class="clarification-title">\u26A0 Quantity mismatch for job ' + escapeHtml(jobNumber) + '</div>';
         html += '<div class="clarification-desc">The ' + curLabel + ' total (' + tripLabel +
           ') shows ' + clar.currentTotal.toLocaleString() + ' pieces, but the ' + altLabel +
@@ -1695,11 +1792,11 @@
         html += '<div class="clarification-current">Currently using: ' + curLabel +
           ' total (' + clar.currentTotal.toLocaleString() + ')</div>';
         html += '<div class="clarification-actions">' +
-          '<button class="clarification-btn clarification-btn-primary" ' +
+          '<button class="clarification-btn' + (keepPrimary ? ' clarification-btn-primary' : '') + '" ' +
           'data-clar-id="' + escapeHtml(clarId) + '" data-choice="keep" data-job="' + escapeHtml(jobNumber) + '" ' +
           'data-current-total="' + clar.currentTotal + '" data-source-label="' + curLabel + '">' +
           'Keep ' + curLabel + ' Total</button>' +
-          '<button class="clarification-btn" ' +
+          '<button class="clarification-btn' + (altPrimary ? ' clarification-btn-primary' : '') + '" ' +
           'data-clar-id="' + escapeHtml(clarId) + '" data-choice="alternative" data-job="' + escapeHtml(jobNumber) + '" ' +
           'data-new-total="' + clar.alternativeTotal + '" data-current-total="' + clar.currentTotal + '" ' +
           'data-source-label="' + altLabel + '">' +
@@ -1773,6 +1870,41 @@
       return html;
     }
 
+    function getClarificationByClarId(clarId) {
+      if (!currentResults) return null;
+      const sep = clarId.lastIndexOf('_');
+      if (sep < 0) return null;
+      const jobNumber = clarId.substring(0, sep);
+      const ci = parseInt(clarId.substring(sep + 1), 10);
+      const result = currentResults.find(function(r) { return r.jobNumber === jobNumber; });
+      if (!result || !result.confidence) return null;
+      const clar = result.confidence.clarifications[ci];
+      if (!clar) return null;
+      return { jobNumber, clar };
+    }
+
+    function renderResolvedClarification(clar, jobNumber, clarId, choice) {
+      let sourceLabel, total;
+      if (clar.type === 'source_mismatch') {
+        if (choice === 'alternative') {
+          sourceLabel = sectionTypeLabel(clar.alternativeSource);
+          total = clar.alternativeTotal;
+        } else {
+          sourceLabel = sectionTypeLabel(clar.currentSource);
+          total = clar.currentTotal;
+        }
+      } else {
+        // no_authoritative \u2014 single-action confirmation; surface the same total.
+        sourceLabel = 'Uniform BOL';
+        total = clar.total;
+      }
+      return '<div class="clarification-resolved" data-clar-id="' + escapeHtml(clarId) + '">' +
+        '<span class="clarification-resolved-text">Using ' + escapeHtml(sourceLabel) +
+        ' total: ' + total.toLocaleString() + '</span>' +
+        '<button class="clarification-change-btn" data-clar-id="' + escapeHtml(clarId) + '">Change</button>' +
+        '</div>';
+    }
+
     function handleClarificationChoice(btn) {
       const clarId = btn.dataset.clarId;
       const choice = btn.dataset.choice;
@@ -1780,35 +1912,47 @@
       const area = document.querySelector('[data-clar-id="' + clarId + '"]');
       if (!area) return;
 
-      let delta = 0;
-      let message = '';
+      const lookup = getClarificationByClarId(clarId);
+      if (!lookup) return;
+      const clar = lookup.clar;
 
-      if (choice === 'keep') {
-        const total = parseInt(btn.dataset.currentTotal, 10);
-        message = 'Got it \u2014 using ' + btn.dataset.sourceLabel + ' total of ' + total.toLocaleString() + '.';
-      } else if (choice === 'alternative') {
-        const newTotal = parseInt(btn.dataset.newTotal, 10);
-        const curTotal = parseInt(btn.dataset.currentTotal, 10);
-        delta = newTotal - curTotal;
-        message = 'Updated \u2014 now using ' + btn.dataset.sourceLabel + ' total of ' +
-          newTotal.toLocaleString() + '. Previous: ' + curTotal.toLocaleString() + '.';
-      } else if (choice === 'acknowledge') {
-        const total = parseInt(btn.dataset.currentTotal, 10);
-        message = 'Acknowledged \u2014 using pallet entry sum of ' + total.toLocaleString() + '.';
+      let delta = 0;
+      if (clar.type === 'source_mismatch' && choice === 'alternative') {
+        delta = clar.alternativeTotal - clar.currentTotal;
       }
 
       clarificationState[clarId] = { resolved: true, choice, delta };
 
-      // Animate transition
       area.style.opacity = '0';
       setTimeout(function() {
-        area.textContent = message;
-        area.classList.remove('clarification-area');
-        area.classList.add('clarification-resolved');
-        area.style.opacity = '';
-
-        if (delta !== 0) updateDisplayTotals(jobNumber);
+        const tmp = document.createElement('div');
+        tmp.innerHTML = renderResolvedClarification(clar, jobNumber, clarId, choice);
+        const newNode = tmp.firstElementChild;
+        area.replaceWith(newNode);
+        updateDisplayTotals(jobNumber);
       }, 250);
+    }
+
+    function handleClarificationChange(btn) {
+      const clarId = btn.dataset.clarId;
+      const area = document.querySelector('[data-clar-id="' + clarId + '"]');
+      if (!area) return;
+
+      const lookup = getClarificationByClarId(clarId);
+      if (!lookup) return;
+      const { jobNumber, clar } = lookup;
+
+      const prevState = clarificationState[clarId] || {};
+      const previousChoice = prevState.choice || null;
+
+      // Clear resolution so the displayed total reverts; the user is mid-revisit.
+      clarificationState[clarId] = { resolved: false, choice: null, delta: 0 };
+      updateDisplayTotals(jobNumber);
+
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderClarificationArea(clar, jobNumber, clarId, previousChoice);
+      const newNode = tmp.firstElementChild;
+      area.replaceWith(newNode);
     }
 
     function updateDisplayTotals(jobNumber) {
