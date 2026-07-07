@@ -1884,23 +1884,69 @@
     }
 
     function renderResolvedClarification(clar, jobNumber, clarId, choice) {
-      let sourceLabel, total;
+      let resolvedType, singleTotal;
       if (clar.type === 'source_mismatch') {
         if (choice === 'alternative') {
-          sourceLabel = sectionTypeLabel(clar.alternativeSource);
-          total = clar.alternativeTotal;
+          resolvedType = clar.alternativeSource;
+          singleTotal = clar.alternativeTotal;
         } else {
-          sourceLabel = sectionTypeLabel(clar.currentSource);
-          total = clar.currentTotal;
+          resolvedType = clar.currentSource;
+          singleTotal = clar.currentTotal;
         }
       } else {
         // no_authoritative \u2014 single-action confirmation; surface the same total.
-        sourceLabel = 'Uniform BOL';
-        total = clar.total;
+        resolvedType = 'uniform_bol';
+        singleTotal = clar.total;
       }
+      const sourceLabel = sectionTypeLabel(resolvedType);
+
+      // If the job total comes from multiple trip contributions, enumerate them
+      // in document order so the resolved line reflects the whole job total
+      // (not just the resolved pair). Same source of truth as getClarifiedTotal.
+      const result = currentResults
+        ? currentResults.find(function(r) { return r.jobNumber === jobNumber; })
+        : null;
+
+      let text;
+      if (!result || !result.trips || result.trips.length <= 1) {
+        text = 'Using ' + sourceLabel + ' total: ' + singleTotal.toLocaleString();
+      } else {
+        const contributions = [];
+        for (let ti = 0; ti < result.trips.length; ti++) {
+          const trip = result.trips[ti];
+          let effSource = trip.source;
+          let effTotal = trip.total;
+          if (result.confidence && result.confidence.clarifications) {
+            for (let ci = 0; ci < result.confidence.clarifications.length; ci++) {
+              const c = result.confidence.clarifications[ci];
+              if (c.tripIndex !== ti || c.type !== 'source_mismatch') continue;
+              const id = jobNumber + '_' + ci;
+              const state = clarificationState[id];
+              if (!state || !state.resolved) continue;
+              if (state.choice === 'alternative') {
+                effSource = c.alternativeSource;
+                effTotal = c.alternativeTotal;
+              }
+            }
+          }
+          contributions.push({ source: effSource, total: effTotal });
+        }
+        // Read the job total from the same source of truth as the header.
+        // By construction, contributions[].total already sums to this value:
+        // getClarifiedTotal = deduplicatedTotal + sum(deltas), and each effTotal
+        // is trip.total plus that trip's delta (0 or alternative - current).
+        const jobTotal = getClarifiedTotal(result);
+        const sumParts = contributions.map(function(c) { return c.total.toLocaleString(); }).join(' + ');
+        const allSame = contributions.every(function(c) { return c.source === resolvedType; });
+        if (allSame) {
+          text = 'Using ' + sourceLabel + ' totals: ' + sumParts + ' = ' + jobTotal.toLocaleString();
+        } else {
+          text = 'Using resolved totals: ' + sumParts + ' = ' + jobTotal.toLocaleString();
+        }
+      }
+
       return '<div class="clarification-resolved" data-clar-id="' + escapeHtml(clarId) + '">' +
-        '<span class="clarification-resolved-text">Using ' + escapeHtml(sourceLabel) +
-        ' total: ' + total.toLocaleString() + '</span>' +
+        '<span class="clarification-resolved-text">' + escapeHtml(text) + '</span>' +
         '<button class="clarification-change-btn" data-clar-id="' + escapeHtml(clarId) + '">Change</button>' +
         '</div>';
     }
