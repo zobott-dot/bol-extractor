@@ -1349,12 +1349,33 @@
 
       const clarifications = [];
 
+      // Whole-job scope: a BOL row may carry the sum across all drops rather
+      // than a single drop's total. Compare only against manifest contributions
+      // to keep the check unambiguous when mixed sources are present.
+      const manifestTrips = trips.filter(function(t) { return t.source === 'manifest'; });
+      const manifestSum = manifestTrips.reduce(function(s, t) { return s + t.total; }, 0);
+      const manifestCount = manifestTrips.length;
+
       for (let ti = 0; ti < trips.length; ti++) {
         const trip = trips[ti];
 
         // Source mismatch: winner vs excluded sources differ significantly
         for (const exc of trip.excluded) {
           if (exc.total === 0) continue;
+
+          // Whole-job duplicate: BOL row's total equals the job-wide manifest
+          // sum across 2+ manifest drops. Exact equality only — near-misses
+          // are genuine discrepancies and must still surface for the user.
+          if (
+            exc.sectionType !== 'manifest' &&
+            manifestCount > 1 &&
+            exc.total === manifestSum
+          ) {
+            exc.wholeJobDuplicate = true;
+            exc.manifestContributionCount = manifestCount;
+            continue;
+          }
+
           const diff = Math.abs(trip.total - exc.total);
           const threshold = Math.max(Math.max(trip.total, exc.total) * 0.01, 100);
           if (diff > threshold) {
@@ -1757,8 +1778,20 @@
         note += ' (' + trip.total.toLocaleString() + ') used.';
       }
       if (trip.excluded.length > 0) {
-        const types = [...new Set(trip.excluded.map(e => sectionTypeLabel(e.sectionType)))];
-        note += ' ' + types.join(', ') + ' entries excluded as duplicate.';
+        const sameDrop = trip.excluded.filter(function(e) { return !e.wholeJobDuplicate; });
+        const wholeJob = trip.excluded.filter(function(e) { return e.wholeJobDuplicate; });
+        if (sameDrop.length > 0) {
+          const types = [...new Set(sameDrop.map(e => sectionTypeLabel(e.sectionType)))];
+          note += ' ' + types.join(', ') + ' entries excluded as duplicate.';
+        }
+        for (const exc of wholeJob) {
+          const excLabel = sectionTypeLabel(exc.sectionType);
+          const count = exc.manifestContributionCount || 0;
+          note += ' ' + excLabel + ' total (' + exc.total.toLocaleString() +
+            ') matches the job total across ' + count +
+            ' manifest' + (count !== 1 ? 's' : '') +
+            ' — excluded as whole-job duplicate.';
+        }
       }
       return note;
     }
