@@ -594,6 +594,38 @@
 
     .filter-radio input[type="radio"] { accent-color: var(--accent); }
 
+    .filter-filename {
+      margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
+    }
+
+    .filter-filename-label {
+      font-size: 0.82rem; font-weight: 500; color: var(--text-muted);
+      margin-bottom: 0.4rem; display: block;
+    }
+
+    .filter-filename-row {
+      display: flex; align-items: stretch; gap: 0;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg); overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .filter-filename-row:focus-within { border-color: var(--border-focus); }
+
+    #filter-filename-input {
+      flex: 1; min-width: 0;
+      font-family: var(--mono); font-size: 0.82rem;
+      padding: 0.45rem 0.6rem;
+      background: transparent; border: none; outline: none;
+      color: var(--text);
+    }
+
+    .filter-filename-ext {
+      font-family: var(--mono); font-size: 0.82rem;
+      padding: 0.45rem 0.6rem 0.45rem 0.2rem;
+      color: var(--text-dim); background: transparent;
+      align-self: center; user-select: none;
+    }
+
     .filter-actions {
       display: flex; gap: 0.6rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;
     }
@@ -2570,6 +2602,16 @@
         ' Renumber sequentially (1, 2, 3, 4\u2026)</label>';
       html += '</div>';
 
+      const defaultFilenameBase = buildDefaultFilterFilenameBase();
+      html += '<div class="filter-filename">';
+      html += '<label class="filter-filename-label" for="filter-filename-input">Filename for downloaded PDF:</label>';
+      html += '<div class="filter-filename-row">';
+      html += '<input type="text" id="filter-filename-input" spellcheck="false" autocomplete="off" ' +
+        'value="' + escapeHtml(defaultFilenameBase) + '">';
+      html += '<span class="filter-filename-ext">.pdf</span>';
+      html += '</div>';
+      html += '</div>';
+
       html += '<div id="filter-empty-hint" class="filter-panel-desc" ' +
         'style="color: var(--warn); margin-top: 0.75rem;" hidden>' +
         'Select at least one section to generate a PDF.</div>';
@@ -2595,7 +2637,7 @@
       if (filterBtn) filterBtn.hidden = false;
     }
 
-    function getFilterFilename() {
+    function buildDefaultFilterFilenameBase() {
       const base = originalFileName.replace(/\.pdf$/i, '').replace(/[\/\\:*?"<>|]/g, '_');
       const jobs = currentResults
         .filter(function(r) { return r.trips && r.trips.length > 0; })
@@ -2616,7 +2658,29 @@
         name = truncated;
       }
 
-      return name + '.pdf';
+      return name;
+    }
+
+    function sanitizeCustomFilterFilename(input) {
+      if (typeof input !== 'string') return '';
+      let name = input.trim();
+      if (/\.pdf$/i.test(name)) name = name.slice(0, -4);
+      name = name.replace(/[\\/:*?"<>|]/g, '');
+      name = name.replace(/[\x00-\x1f\x7f]/g, '');
+      name = name.replace(/\s+/g, ' ');
+      // Windows rejects trailing dots or spaces on filenames.
+      name = name.replace(/[.\s]+$/, '');
+      name = name.trim();
+      if (name.length > 120) name = name.slice(0, 120);
+      return name;
+    }
+
+    function getFilterFilename() {
+      const inputEl = document.getElementById('filter-filename-input');
+      const raw = inputEl ? inputEl.value : '';
+      const sanitized = sanitizeCustomFilterFilename(raw);
+      const base = sanitized || buildDefaultFilterFilenameBase();
+      return base + '.pdf';
     }
 
     async function generateFilteredPdf() {
