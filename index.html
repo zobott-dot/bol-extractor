@@ -879,6 +879,14 @@
       return m ? m[0].toUpperCase() : null;
     }
 
+    // Canonical form of a VMI_T / VMI_M token for matching across OCR variants
+    // (spaces vs underscores vs hyphens; O/0 confusion). Preserves the original
+    // string for display and uses only this collapsed form for equality checks.
+    function canonicalTripToken(text) {
+      if (!text) return '';
+      return text.toUpperCase().replace(/O/g, '0').replace(/[^A-Z0-9]/g, '');
+    }
+
     function sectionTypeLabel(type) {
       const map = { manifest: 'Manifest', sg360_bol: 'SG360 BOL', uniform_bol: 'Uniform BOL' };
       return map[type] || type;
@@ -1040,12 +1048,22 @@
       for (const section of sections) {
         for (const line of section.lines) {
           if (!section.metadata.tripNumber) {
-            const m = line.text.match(/(VMI_T_[\dO]{7})/i);
-            if (m) section.metadata.tripNumber = m[1].toUpperCase().replace(/O/g, '0');
+            // Tolerate spaces/hyphens where OCR loses the underscores
+            // (e.g. "VMI T 0100748" on a scanned page).
+            const m = line.text.match(/(VMI[\s_\-]*T[\s_\-]*[\dO]{7})/i);
+            if (m) {
+              const norm = m[1].toUpperCase().replace(/O/g, '0');
+              section.metadata.tripNumber = norm;
+              section.metadata.tripKey = canonicalTripToken(norm);
+            }
           }
           if (!section.metadata.manifestNumber) {
-            const m = line.text.match(/(VMI_M_[\dO]{7})/i);
-            if (m) section.metadata.manifestNumber = m[1].toUpperCase().replace(/O/g, '0');
+            const m = line.text.match(/(VMI[\s_\-]*M[\s_\-]*[\dO]{7})/i);
+            if (m) {
+              const norm = m[1].toUpperCase().replace(/O/g, '0');
+              section.metadata.manifestNumber = norm;
+              section.metadata.manifestKey = canonicalTripToken(norm);
+            }
           }
           if (!section.metadata.loadNumber) {
             const m = line.text.match(/Load\s*#?\s*(\d+)/i);
@@ -1295,20 +1313,24 @@
       }
 
       // Group by drop: formRun is the true discriminator (additive drops vs
-      // true duplicate). Fall back to tripNumber (legacy behavior) when
-      // form/run wasn't recoverable, then per-section as a last resort.
+      // true duplicate). Fall back to canonical tripNumber (legacy behavior)
+      // when form/run wasn't recoverable, then per-section as a last resort.
+      // Canonicalize so OCR variants of the same trip token don't split into
+      // separate dropGroups.
       const dropGroups = new Map();
       for (const f of findings) {
+        const tripKey = canonicalTripToken(f.tripNumber);
         const key = f.formRun
           ? 'fr:' + f.formRun
-          : f.tripNumber
-            ? 'tr:' + f.tripNumber
+          : tripKey
+            ? 'tr:' + tripKey
             : 'sx:' + f.sectionIndex;
         if (!dropGroups.has(key)) dropGroups.set(key, []);
         dropGroups.get(key).push(f);
       }
 
       const trips = [];
+      const involvedSectionIndices = new Set();
       let deduplicatedTotal = 0;
 
       for (const [, groupFindings] of dropGroups) {
@@ -1322,6 +1344,7 @@
         }));
 
         deduplicatedTotal += winner.total;
+        for (const f of groupFindings) involvedSectionIndices.add(f.sectionIndex);
         trips.push({
           tripNumber: winner.tripNumber || null,
           formRun: winner.formRun || null,
@@ -1338,7 +1361,54 @@
         });
       }
 
-      return { jobNumber: baseJob, deduplicatedTotal, trips };
+      return { jobNumber: baseJob, deduplicatedTotal, trips, involvedSectionIndices };
+    }
+
+    // --- Trip-linked inclusion (Filter PDF scope) ---
+    //
+    // When a section's text layer loses a job number (e.g. highlighter damage
+    // on a scan), the job still text-matches on its sibling section via the
+    // shared Trip#. This finds sections that share a trip key with any
+    // text-matched section for the job but did not themselves text-match, so
+    // the Filter PDF and the job's detail panel can surface them. Never
+    // affects totals, dedup, or confidence.
+    function computeTripLinkedNotes(result, sections) {
+      if (!sections || !result.trips || result.trips.length === 0) return [];
+
+      // Trip keys already claimed by this job's text-matched findings, and
+      // the section type that supplied each (for the "linked to this job's
+      // {type}" phrasing).
+      const jobTripKeyToSource = new Map();
+      for (const trip of result.trips) {
+        if (!trip.tripNumber) continue;
+        const key = canonicalTripToken(trip.tripNumber);
+        if (!jobTripKeyToSource.has(key)) jobTripKeyToSource.set(key, trip.source);
+      }
+      if (jobTripKeyToSource.size === 0) return [];
+
+      // Reuse the section indices deduplicateJob already collected — avoids
+      // re-invoking the parsers and any risk of side effects if they ever
+      // grow some.
+      const involvedSectionIndices = result.involvedSectionIndices || new Set();
+
+      const notes = [];
+      for (let si = 0; si < sections.length; si++) {
+        if (involvedSectionIndices.has(si)) continue;
+        const section = sections[si];
+        if (section.type === 'vehicle_inspection') continue;
+        if (!section.metadata.tripKey) continue;
+        const linkedTo = jobTripKeyToSource.get(section.metadata.tripKey);
+        if (!linkedTo) continue;
+        notes.push({
+          sectionIndex: si,
+          sectionType: section.type,
+          startPage: section.startPage,
+          endPage: section.endPage,
+          tripNumber: section.metadata.tripNumber || section.metadata.tripKey,
+          linkedToType: linkedTo,
+        });
+      }
+      return notes;
     }
 
     // --- Phase 3: Confidence scoring ---
@@ -1719,6 +1789,7 @@
       for (const baseJob of uniqueJobs) {
         const dedup = deduplicateJob(baseJob, documentSections);
         const raw = scanJobRaw(baseJob);
+        dedup.tripLinkedNotes = computeTripLinkedNotes(dedup, documentSections);
         allResults.push({ ...dedup, raw });
       }
       currentResults = allResults;
@@ -1862,7 +1933,7 @@
           const v = (entry.variant || result.jobNumber).toUpperCase();
           if (!variants[v]) variants[v] = { total: 0, trips: new Set() };
           variants[v].total += entry.quantity;
-          variants[v].trips.add(trip.tripNumber || 'Unknown');
+          variants[v].trips.add(canonicalTripToken(trip.tripNumber) || 'Unknown');
         }
       }
       const keys = Object.keys(variants).sort();
@@ -2165,6 +2236,29 @@
           // Detail panel (hidden by default)
           html += '<div class="job-detail" hidden>';
 
+          // Trip-linked BOL/Manifest notes: sections whose Trip# matched
+          // this job's records but whose text layer lost the job number.
+          // Filter PDF pulls them in; totals are unaffected.
+          if (result.tripLinkedNotes && result.tripLinkedNotes.length > 0) {
+            for (const linkedNote of result.tripLinkedNotes) {
+              const pageRange = linkedNote.startPage === linkedNote.endPage
+                ? 'page ' + linkedNote.startPage
+                : 'pages ' + linkedNote.startPage + '–' + linkedNote.endPage;
+              const linkedToLabel = linkedNote.linkedToType
+                ? sectionTypeLabel(linkedNote.linkedToType).toLowerCase()
+                : null;
+              const suffix = linkedToLabel
+                ? " linked to this job's " + linkedToLabel
+                : ' linked to this job by trip number';
+              html += '<div class="dedup-note">' +
+                escapeHtml(sectionTypeLabel(linkedNote.sectionType)) + ' (' +
+                escapeHtml(pageRange) + ', Trip ' + escapeHtml(linkedNote.tripNumber) + ')' +
+                escapeHtml(suffix) +
+                ' — job number not readable in the scanned text layer; included in Filter PDF.' +
+                '</div>';
+            }
+          }
+
           // Variant breakdown in detail panel
           if (variantCount > 1) {
             html += renderVariantBreakdown(result);
@@ -2322,39 +2416,78 @@
 
     function buildFilterableSections() {
       if (!currentResults || !documentSections) return [];
-      const filterable = [];
       const jobsWithData = currentResults.filter(function(r) { return r.trips && r.trips.length > 0; });
 
-      for (let si = 0; si < documentSections.length; si++) {
-        const section = documentSections[si];
-        if (section.type === 'vehicle_inspection') continue;
-
-        const jobsInSection = [];
-
-        for (const result of jobsWithData) {
-          let parsed;
-          if (section.type === 'manifest') parsed = parseManifestSection(section, result.jobNumber);
-          else if (section.type === 'sg360_bol') parsed = parseSG360Section(section, result.jobNumber);
-          else if (section.type === 'uniform_bol') parsed = parseUniformSection(section, result.jobNumber);
-
-          if (parsed && (parsed.total > 0 || parsed.entries.length > 0)) {
-            jobsInSection.push(result.jobNumber);
-          }
-        }
-
-        if (jobsInSection.length > 0) {
-          filterable.push({
-            sectionIndex: si,
-            type: section.type,
-            startPage: section.startPage,
-            endPage: section.endPage,
-            metadata: section.metadata,
-            jobs: jobsInSection,
-            checked: true,
-          });
+      // Invert the per-job involvedSectionIndices maps that deduplicateJob
+      // already produced: sectionIndex -> [jobNumber, ...].
+      const sectionToJobs = new Map();
+      for (const result of jobsWithData) {
+        const involved = result.involvedSectionIndices || new Set();
+        for (const si of involved) {
+          if (!sectionToJobs.has(si)) sectionToJobs.set(si, []);
+          sectionToJobs.get(si).push(result.jobNumber);
         }
       }
 
+      const filterable = [];
+      const includedSectionIndices = new Set();
+      const claimedTripKeys = new Set();
+
+      // Pass 1: sections that text-matched at least one searched job.
+      for (let si = 0; si < documentSections.length; si++) {
+        const section = documentSections[si];
+        if (section.type === 'vehicle_inspection') continue;
+        const jobsInSection = sectionToJobs.get(si);
+        if (!jobsInSection || jobsInSection.length === 0) continue;
+
+        filterable.push({
+          sectionIndex: si,
+          type: section.type,
+          startPage: section.startPage,
+          endPage: section.endPage,
+          metadata: section.metadata,
+          jobs: jobsInSection,
+          checked: true,
+          linkedByTrip: null,
+        });
+        includedSectionIndices.add(si);
+        if (section.metadata.tripKey) claimedTripKeys.add(section.metadata.tripKey);
+      }
+
+      // Pass 2: sibling sections whose canonical Trip# matches a claimed key
+      // but which themselves lost the job number in the text layer. Applies
+      // both directions (BOL -> Manifest and Manifest -> BOL). Vehicle
+      // inspection records are excluded even when trip-linked.
+      //
+      // The `includedSectionIndices` guard is the aggregate of every job's
+      // `result.involvedSectionIndices`, which deduplicateJob populates with
+      // ALL findings in each drop group — winner and same-drop duplicates
+      // alike. Clarification state never removes anything from that set
+      // (it only shifts which total getClarifiedTotal reports), so any
+      // section that produced entries for a searched job is guaranteed to
+      // be filtered out here before we could mislabel it as trip-linked.
+      for (let si = 0; si < documentSections.length; si++) {
+        if (includedSectionIndices.has(si)) continue;
+        const section = documentSections[si];
+        if (section.type === 'vehicle_inspection') continue;
+        if (!section.metadata.tripKey) continue;
+        if (!claimedTripKeys.has(section.metadata.tripKey)) continue;
+
+        filterable.push({
+          sectionIndex: si,
+          type: section.type,
+          startPage: section.startPage,
+          endPage: section.endPage,
+          metadata: section.metadata,
+          jobs: [],
+          checked: true,
+          linkedByTrip: section.metadata.tripNumber || section.metadata.tripKey,
+        });
+        includedSectionIndices.add(si);
+      }
+
+      // Preserve document order.
+      filterable.sort(function(a, b) { return a.sectionIndex - b.sectionIndex; });
       return filterable;
     }
 
@@ -2418,7 +2551,13 @@
         html += '<div class="filter-section-info">';
         html += '<div class="filter-section-pages">' + escapeHtml(pageLabel) +
           ' \u2014 ' + escapeHtml(typeLabel) + (idLabel ? ' ' + escapeHtml(idLabel) : '') + '</div>';
-        html += '<div class="filter-section-jobs">Jobs: ' + s.jobs.map(escapeHtml).join(', ') + '</div>';
+        if (s.linkedByTrip) {
+          html += '<div class="filter-section-jobs">Linked by Trip ' +
+            escapeHtml(s.linkedByTrip) +
+            ' \u2014 job number not machine-readable on this page</div>';
+        } else {
+          html += '<div class="filter-section-jobs">Jobs: ' + s.jobs.map(escapeHtml).join(', ') + '</div>';
+        }
         html += '</div></div>';
       }
       html += '</div>';
