@@ -1,0 +1,18 @@
+{
+  "name": "BOL Parsing Tool",
+  "short_name": "BOL Parser",
+  "description": "Search daily BOL reports for job numbers with document-aware deduplication.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": [
+    {
+      "src": "BOL_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
-# CLAUDE.md — BOL Extractor
+# CLAUDE.md — BOL Parsing Tool
 
 ## What this is
-A single-page browser tool (`index.html`, no build system, deployed via GitHub Pages at zobott-dot.github.io/bol-extractor). It parses a daily SG360 BOL report PDF and extracts the deduplicated piece count for searched job numbers.
+A single-page browser tool (`index.html`, no build system, deployed via GitHub Pages at zobott-dot.github.io/bol-extractor — the repository/URL keep the old `bol-extractor` name; only the displayed product name changed to "BOL Parsing Tool" in v5.0). It parses a daily SG360 BOL report PDF and extracts the deduplicated piece count for searched job numbers.
 
 ## What the tool does, in order
 1. **Filter** — a daily report contains the Bills of Lading and Manifests for ALL jobs that shipped that day. Given a searched job number, discard every row/section not associated with that job. Everything else is noise.
@@ -33,5 +33,6 @@ When a real mismatch fires the amber warning and the user picks a source:
 3. A single-drop job appearing in both a BOL and its manifest (e.g. 161682 = 138,952) is counted ONCE, not doubled.
 4. A genuine same-drop BOL/Manifest disagreement still fires the warning.
 
-## Phase roadmap (resequenced 2026-06-30)
-Phase 4 was restructured: **4a = dual-source results** (show BOL and Manifest totals in parallel, surfacing disagreements as facts rather than hiding them via the hierarchy); **4b = exports** (clipboard, CSV, print/PDF); **4c = polish, error handling, first-run welcome overlay**. Pallet-count extraction is parked, conditional on tester demand. NOTE: an earlier "Phase 4a export functionality" commit exists in history, built against the single-source model before this resequencing — reconcile it when the export phase begins.
+## Phase roadmap
+- **Phases 3 and 4 — COMPLETE.** Parsing, deduplication, confidence/clarification, filter-PDF, and filename editing are live and regression-verified. Export scaffolding (clipboard formatter, print header/footer, print stylesheet) is dormant in the codebase — no UI entry point is wired up and it has never been user-verified; strings were renamed in v5.0 but functionality is not exposed. The earlier 4a/4b/4c restructuring plan is retired.
+- **Phase 5 (v5.0) — current.** Cosmetic/UX release: product renamed to "BOL Parsing Tool" (display only; repo/URL unchanged), added Quick Start and User Guide modals in the header (Quick Start pulses until first opened; both close via X / backdrop / Esc), introduced the v5.x footer version scheme (bumped per deploy for cache verification), and added the two attention-directing animations — count-up on the headline total (~500 ms ease-out) and staggered fade-and-rise on results sections (~275 ms per block, 75 ms stagger). Both animations and the pulse are suppressed under `prefers-reduced-motion: reduce`. No parsing/dedup/clarification/filter/PDF-generation logic was touched.

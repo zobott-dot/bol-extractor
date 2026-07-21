@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOL Extractor</title>
+  <title>BOL Parsing Tool</title>
   <link rel="icon" type="image/png" href="BOL_icon.png">
   <link rel="apple-touch-icon" href="BOL_icon.png">
+  <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" async></script>
   <script>
     document.documentElement.setAttribute('data-theme',
@@ -700,6 +701,185 @@
     /* Print-only elements hidden on screen */
     #print-header, #print-grand-total, #print-footer { display: none; }
 
+    /* Phase 5: Header actions (Quick Start + User Guide + theme toggle) */
+    .header-actions {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+
+    .icon-btn {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+      letter-spacing: 0.03em;
+      position: relative;
+    }
+    .icon-btn:hover { background: var(--surface-hover); border-color: var(--accent); }
+
+    /* Quick Start pulse (removed after first open) */
+    @keyframes qs-pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(91, 138, 240, 0.55);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 6px rgba(91, 138, 240, 0);
+        transform: scale(1.04);
+      }
+    }
+    .quickstart-btn.pulse {
+      animation: qs-pulse 2s ease-in-out infinite;
+      border-color: var(--accent);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .quickstart-btn.pulse { animation: none; }
+    }
+
+    /* Phase 5: Footer */
+    .app-footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    #footer-version { color: var(--text-muted); }
+
+    /* Phase 5: Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+    [data-theme="light"] .modal-backdrop { background: rgba(15, 17, 23, 0.35); }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-width: 560px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      animation: modal-in 0.18s ease-out;
+    }
+    .modal-tall { max-width: 720px; }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .modal { animation: none; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface-hover); }
+
+    .modal-body {
+      padding: 20px 22px 22px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .modal-body-scroll {
+      overflow-y: auto;
+      max-height: calc(85vh - 62px);
+    }
+    .modal-body-scroll::-webkit-scrollbar { width: 8px; }
+    .modal-body-scroll::-webkit-scrollbar-track { background: transparent; }
+    .modal-body-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .modal-body-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    .modal-body h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+    .modal-body h4:first-child { margin-top: 0; }
+    .modal-body p { margin-bottom: 10px; color: var(--text-muted); }
+    .modal-body p:last-child { margin-bottom: 0; }
+    .modal-body strong { color: var(--text); font-weight: 600; }
+    .modal-body em { color: var(--text); font-style: italic; }
+
+    .qs-list {
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+    .qs-list li {
+      margin-bottom: 10px;
+      color: var(--text-muted);
+    }
+    .qs-list li:last-child { margin-bottom: 0; }
+    .qs-list strong { color: var(--text); }
+    .qs-note {
+      padding: 12px 14px;
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    .qs-note em { color: var(--text); }
+
+    /* Phase 5: Results entrance animation (fade + rise, staggered) */
+    @keyframes section-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .job-group.section-animate {
+      animation: section-in 275ms ease-out both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .job-group.section-animate { animation: none; }
+    }
+
     /* Print stylesheet */
     @media print {
       :root, [data-theme="dark"], [data-theme="light"] {
@@ -719,7 +899,7 @@
       header, #upload-section, #search-section, #status-area,
       .action-row, #filter-area, .expand-btn, .results-header,
       .clarification-actions, .clarification-change-btn, .job-group-not-found,
-      #grand-total-bar { display: none !important; }
+      #grand-total-bar, .app-footer, .modal-backdrop { display: none !important; }
 
       /* Show print elements */
       #print-header {
@@ -769,15 +949,19 @@
       <div class="header-row">
         <div>
           <div class="header-title">
-            <h1>BOL Extractor</h1>
-            <span class="badge">Phase 4a</span>
+            <h1>BOL Parsing Tool</h1>
+            <span class="badge" id="version-badge">v5.0</span>
           </div>
           <p class="subtitle">Search daily BOL reports for job numbers with document-aware deduplication.</p>
         </div>
-        <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark mode">
-          <span class="theme-label-dark">Dark</span>
-          <span class="theme-label-light">Light</span>
-        </button>
+        <div class="header-actions">
+          <button id="quickstart-btn" class="icon-btn quickstart-btn" title="Quick Start" aria-label="Quick Start">Quick Start</button>
+          <button id="guide-btn" class="icon-btn" title="User Guide" aria-label="User Guide">User Guide</button>
+          <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark mode">
+            <span class="theme-label-dark">Dark</span>
+            <span class="theme-label-light">Light</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -818,7 +1002,7 @@
     <div id="status-area"></div>
 
     <div id="print-header">
-      <div id="print-header-title">BOL Extractor Results</div>
+      <div id="print-header-title">BOL Parsing Tool Results</div>
       Source: <span id="print-source"></span><br>
       Processed: <span id="print-date"></span><br>
       Searched: <span id="print-jobs"></span>
@@ -831,9 +1015,75 @@
       </div>
       <div id="results-body"></div>
     </section>
+
+    <footer class="app-footer" id="app-footer">
+      BOL Parsing Tool <span id="footer-version">v5.0</span>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="quickstart-modal" hidden aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="quickstart-title">
+      <div class="modal-header">
+        <h3 class="modal-title" id="quickstart-title">Quick Start</h3>
+        <button class="modal-close" data-modal-close="quickstart-modal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body modal-body-quickstart">
+        <ol class="qs-list">
+          <li><strong>Upload</strong> &mdash; Drop your BOL PDF onto the page (or click to browse).</li>
+          <li><strong>Search</strong> &mdash; Type a job number and press Enter.</li>
+          <li><strong>Read your total</strong> &mdash; The big number is your deduplicated piece count. Done.</li>
+          <li><strong>Optional</strong> &mdash; Use the checkboxes to filter sections, then download a filtered PDF with the button below the results.</li>
+        </ol>
+        <p class="qs-note"><em>If the tool asks you a question about which counts to use, answer it &mdash; that&rsquo;s how it keeps your total accurate. Full details in the User Guide.</em></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="guide-modal" hidden aria-hidden="true">
+    <div class="modal modal-tall" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div class="modal-header">
+        <h3 class="modal-title" id="guide-title">User Guide &mdash; BOL Parsing Tool</h3>
+        <button class="modal-close" data-modal-close="guide-modal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body modal-body-scroll">
+        <h4>1. What This Tool Does</h4>
+        <p>The BOL Parsing Tool reads bill of lading PDFs and answers one question accurately: <em>how many pieces shipped for a given job?</em> You upload a PDF, search a job number, and get a verified total.</p>
+        <p>The key word is <em>accurately</em>. The same shipment often appears more than once in BOL paperwork &mdash; a BOL page and its supporting manifest pages can both list the same pieces. Simply adding every number the tool finds would double-count your freight. So the tool deduplicates: it identifies when multiple documents describe the same shipment and counts those pieces exactly once. The total you see is the real total, not the sum of the paperwork.</p>
+
+        <h4>2. Uploading and Searching</h4>
+        <p>Drop a BOL PDF anywhere on the drop zone, or click it to browse. The tool processes the file entirely in your browser &mdash; nothing is uploaded to a server, so your shipping documents never leave your machine.</p>
+        <p>Once the file loads, type a job number in the search box and press Enter. The tool scans every page, finds each section where that job number appears, groups related documents, and presents your results. You can search the same file for different job numbers without re-uploading, and job numbers with suffixes (like a D1 drop code) are matched as you type them.</p>
+
+        <h4>3. Understanding Your Results</h4>
+        <p>The headline number is your deduplicated total piece count. Below it, results are organized by the sections of the PDF where your job was found.</p>
+        <p>Behind the scenes, the tool distinguishes two kinds of source documents. A <strong>BOL page</strong> is the authoritative shipping record; a <strong>manifest page</strong> is supporting detail that often accompanies it. When both exist for the same shipment, the tool prefers the BOL count and treats the manifest as confirmation rather than as additional freight. When only a manifest exists for a shipment, the manifest count is used.</p>
+        <p>Jobs that ship across multiple trips are handled per trip: each trip&rsquo;s documents are grouped and deduplicated within that trip, then the trips are summed. This is why one job can show several sections that are all legitimately counted.</p>
+
+        <h4>4. Clarification Prompts</h4>
+        <p>Occasionally the paperwork is genuinely ambiguous &mdash; for example, a BOL and its manifest disagree about the count, or the tool can&rsquo;t confidently tell whether two documents describe the same shipment. Rather than silently guessing, the tool asks you.</p>
+        <p>A clarification prompt shows you the specific documents involved and the counts at stake, and asks which reading is correct. Your answer goes directly into the total, so a clarified result is just as reliable as an automatic one &mdash; it simply had a human in the loop. If you&rsquo;re unsure how to answer, look at the physical paperwork or the PDF pages cited in the prompt: the question always comes down to whether pieces are being described twice or are genuinely separate.</p>
+
+        <h4>5. Filtering and Downloading a PDF</h4>
+        <p>Every section in your results has a checkbox. Uncheck the sections you don&rsquo;t want, and the tool rebuilds the total from just the checked ones &mdash; useful when you need the count for a subset of drops or trips. Sections that are linked (the same trip&rsquo;s BOL and manifest) are included together, so filtering can&rsquo;t accidentally reintroduce double-counting.</p>
+        <p>The <strong>Generate Filtered PDF</strong> button produces a new PDF containing only the pages behind your checked sections. Before downloading you can choose how pages are numbered and edit the suggested filename &mdash; the tool proposes one based on the job, but the field is yours to change. Your edited filename is remembered for that download.</p>
+
+        <h4>6. Installing as an App</h4>
+        <p>This tool is a Progressive Web App. In Chrome or Edge, look for the install icon in the address bar (or the browser menu&rsquo;s &ldquo;Install&rdquo; option) to add it as a standalone app with its own icon and window. Once installed, it opens instantly and works offline &mdash; the parsing happens locally, so no connection is needed after installation.</p>
+
+        <h4>7. Troubleshooting</h4>
+        <p><strong>No results for a job number.</strong> Confirm the number as printed on the paperwork, including any suffix. If the PDF is a scanned image rather than a text PDF, the tool can&rsquo;t read it &mdash; text-based PDFs only.</p>
+        <p><strong>A total that looks wrong.</strong> Check whether any sections are unchecked from a previous filter, and review any clarification answers you gave. The section on results (above) explains why the total may legitimately differ from the sum of every number on the paperwork.</p>
+        <p><strong>You suspect you&rsquo;re on an old version.</strong> After an update is deployed, the version number in the footer confirms you have it. If the footer shows an older version, close all tabs of the tool (or the installed app) and reopen; if it persists, a hard refresh (Ctrl+Shift+R) clears the cached copy.</p>
+      </div>
+    </div>
   </div>
 
   <script type="module">
+    // --- Version ---
+    // Scheme: v5.x — bump x once per deploy so a stale cache is visible in the footer.
+    // Any structural release (breaking parser changes, new phase) bumps to v6.0, v7.0, etc.
+    const APP_VERSION = 'v5.0';
+
     // --- State ---
     let pdfPages = null;
     let pdfjsLib = null;
@@ -845,6 +1095,11 @@
     let filterSections = null;
     let originalPdfBuffer = null;
     let originalFileName = '';
+    // Phase 5: track which job-group elements have already animated in
+    // so filter checkbox re-renders don't re-run the entrance stagger.
+    const animatedJobs = new Set();
+    const prefersReducedMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // --- DOM refs ---
     const dropZone = document.getElementById('drop-zone');
@@ -874,6 +1129,121 @@
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('bol-theme', next);
     });
+
+    // --- Phase 5: Version display ---
+    (function syncVersionDisplays() {
+      const versionBadge = document.getElementById('version-badge');
+      if (versionBadge) versionBadge.textContent = APP_VERSION;
+      const footerVersion = document.getElementById('footer-version');
+      if (footerVersion) footerVersion.textContent = APP_VERSION;
+    })();
+
+    // --- Phase 5: Modals (Quick Start, User Guide) ---
+    const QS_SEEN_KEY = 'bpt_quickstart_seen';
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.hidden = false;
+      el.setAttribute('aria-hidden', 'false');
+      const closeBtn = el.querySelector('.modal-close');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.hidden = true;
+        m.setAttribute('aria-hidden', 'true');
+      });
+    }
+
+    const quickstartBtn = document.getElementById('quickstart-btn');
+    const guideBtn = document.getElementById('guide-btn');
+
+    // Pulse the Quick Start button until the user opens it the first time.
+    if (quickstartBtn && !localStorage.getItem(QS_SEEN_KEY)) {
+      quickstartBtn.classList.add('pulse');
+    }
+
+    if (quickstartBtn) {
+      quickstartBtn.addEventListener('click', () => {
+        openModal('quickstart-modal');
+        if (!localStorage.getItem(QS_SEEN_KEY)) {
+          localStorage.setItem(QS_SEEN_KEY, '1');
+          quickstartBtn.classList.remove('pulse');
+        }
+      });
+    }
+    if (guideBtn) {
+      guideBtn.addEventListener('click', () => openModal('guide-modal'));
+    }
+
+    // Close via X, backdrop click, Esc.
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal(backdrop.id);
+      });
+    });
+    document.querySelectorAll('[data-modal-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.modalClose));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const open = Array.from(document.querySelectorAll('.modal-backdrop'))
+          .find(m => !m.hidden);
+        if (open) closeModal(open.id);
+      }
+    });
+
+    // --- Phase 5: Count-up animation on totals ---
+    function animateCountUp(el, target) {
+      if (!el) return;
+      if (prefersReducedMotion) {
+        el.textContent = target.toLocaleString() + ' pcs';
+        return;
+      }
+      const startRaw = parseInt((el.textContent || '').replace(/[^\d-]/g, ''), 10);
+      const start = Number.isFinite(startRaw) ? startRaw : 0;
+      if (start === target) {
+        el.textContent = target.toLocaleString() + ' pcs';
+        return;
+      }
+      const duration = 500;
+      const t0 = performance.now();
+      function step(now) {
+        const p = Math.min(1, (now - t0) / duration);
+        // ease-out cubic
+        const eased = 1 - Math.pow(1 - p, 3);
+        const value = Math.round(start + (target - start) * eased);
+        el.textContent = value.toLocaleString() + ' pcs';
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = target.toLocaleString() + ' pcs';
+      }
+      requestAnimationFrame(step);
+    }
+
+    // --- Phase 5: Staggered entrance for results sections ---
+    function applyStaggeredEntrance(container) {
+      if (!container) return;
+      if (prefersReducedMotion) return;
+      const groups = container.querySelectorAll('.job-group');
+      let idx = 0;
+      groups.forEach(g => {
+        const key = g.dataset.job || ('__idx_' + idx);
+        if (animatedJobs.has(key)) return;
+        g.classList.add('section-animate');
+        g.style.animationDelay = (idx * 75) + 'ms';
+        animatedJobs.add(key);
+        idx++;
+      });
+    }
 
     // --- Utilities ---
 
@@ -1792,6 +2162,9 @@
       clarificationState = {};
       currentResults = null;
       filterSections = null;
+      // Phase 5: Reset entrance-animation tracking so a fresh search
+      // re-runs the staggered fade-in for the new result blocks.
+      animatedJobs.clear();
 
       const parsed = parseJobInput();
       if (!parsed) return;
@@ -2144,21 +2517,21 @@
 
       const newTotal = getClarifiedTotal(result);
 
-      // Update job total with highlight
+      // Update job total with highlight + count-up
       const jobEl = document.getElementById('job-total-' + jobNumber);
       if (jobEl) {
-        jobEl.textContent = newTotal.toLocaleString() + ' pcs';
+        animateCountUp(jobEl, newTotal);
         jobEl.classList.remove('number-updated');
         void jobEl.offsetWidth; // force reflow for re-trigger
         jobEl.classList.add('number-updated');
       }
 
-      // Update grand total with highlight
+      // Update grand total with highlight + count-up
       if (currentResults.length >= 2) {
         const grandEl = document.getElementById('grand-total-value');
         if (grandEl) {
           const grand = currentResults.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
-          grandEl.textContent = grand.toLocaleString() + ' pcs';
+          animateCountUp(grandEl, grand);
           grandEl.classList.remove('number-updated');
           void grandEl.offsetWidth;
           grandEl.classList.add('number-updated');
@@ -2352,7 +2725,7 @@
         html += '<div id="print-grand-total" class="grand-total">Total: <strong>' +
           printGrand.toLocaleString() + ' pcs</strong></div>';
       }
-      html += '<div id="print-footer">Generated by BOL Extractor</div>';
+      html += '<div id="print-footer">Generated by BOL Parsing Tool ' + APP_VERSION + '</div>';
 
       // Update print header
       const printSource = document.getElementById('print-source');
@@ -2364,6 +2737,29 @@
 
       resultsBody.innerHTML = html;
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Phase 5: staggered entrance for result sections + count-up on totals.
+      applyStaggeredEntrance(resultsBody);
+      // Count-up each per-job total from 0 to its final value.
+      for (const r of allResults) {
+        if (r.trips && r.trips.length > 0) {
+          const el = document.getElementById('job-total-' + r.jobNumber);
+          if (el) {
+            const target = getClarifiedTotal(r);
+            el.textContent = '0 pcs';
+            animateCountUp(el, target);
+          }
+        }
+      }
+      // Count-up the grand total if shown.
+      if (allResults.length >= 2) {
+        const grandEl = document.getElementById('grand-total-value');
+        if (grandEl) {
+          const grand = allResults.reduce(function(s, r) { return s + getClarifiedTotal(r); }, 0);
+          grandEl.textContent = '0 pcs';
+          animateCountUp(grandEl, grand);
+        }
+      }
     }
 
     // --- Render: Phase 1 fallback ---
@@ -2907,7 +3303,7 @@
       if (results.length === 0) return;
 
       const lines = [];
-      lines.push('BOL Extractor Results');
+      lines.push('BOL Parsing Tool Results');
       lines.push('Source: ' + originalFileName);
       lines.push('Processed: ' + formatExportDate());
       lines.push('');
